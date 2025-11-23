@@ -14,17 +14,27 @@ export default function Login() {
         setError("");
 
         try {
-            // 1. Send the request to Django
-            const response = await axios.post("http://localhost:8000/api/token/", {
+            // Note: URL is now relative (/api) because of Nginx
+            const response = await axios.post("/api/token/", {
                 username: username,
                 password: password,
             });
 
-            // 2. If success, save the "ID Card" (Token) in the browser
+            // 1. Save Token AND Role
             localStorage.setItem("access_token", response.data.access);
             localStorage.setItem("refresh_token", response.data.refresh);
+            localStorage.setItem("user_role", response.data.role); // <--- SAVE ROLE
 
-            navigate("/dashboard");
+            // 2. Redirect based on Role
+            const role = response.data.role;
+
+            if (role === "DOCTOR") {
+                navigate("/doctor-dashboard");
+            } else if (role === "STUDENT") {
+                navigate("/dashboard");
+            } else {
+                navigate("/dashboard"); // Default 
+            }
 
         } catch (err) {
             console.error("Login Failed:", err);

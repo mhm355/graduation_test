@@ -22,9 +22,10 @@ services:
     container_name: bsu_backend
     command: python manage.py runserver 0.0.0.0:8000
     volumes:
-      - ./backend:/app    
-    ports:
-      - "8000:8000"
+      - ./backend:/app   
+      - static_volume:/app/static 
+    #ports:
+    #  - "8000:8000"
     depends_on:
       database:    
         condition: service_healthy
@@ -37,8 +38,8 @@ services:
       context: ./frontend 
       dockerfile: Dockerfile
     container_name: bsu_frontend
-    ports:
-      - "5173:5173"
+    #ports:
+     # - "5173:5173"
     depends_on:
       - backend
     networks:
@@ -48,9 +49,23 @@ services:
       - /app/node_modules
     restart: always
 
+  nginx:
+    build: ./nginx
+    container_name: bsu_gateway
+    ports:
+      - "80:80"
+    depends_on:
+      - frontend
+      - backend
+    volumes:
+      - static_volume:/app/static # To serve Admin CSS
+    networks:
+      - bsu_network
+
 
 volumes:
   db_data:
+  static_volume:
 
 networks:
   bsu_network:

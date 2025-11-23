@@ -1,5 +1,5 @@
 from django.db import models
-from django.conf import settings # To link to the Student User
+from django.conf import settings 
 
 class Department(models.Model):
     name = models.CharField(max_length=100) # e.g., "Electrical Engineering"
@@ -13,6 +13,15 @@ class Course(models.Model):
     name = models.CharField(max_length=100) # e.g., "Circuits 1"
     code = models.CharField(max_length=20, unique=True) # e.g., "EE101"
     credit_hours = models.IntegerField(default=3)
+
+    doctor = models.ForeignKey(
+        settings.AUTH_USER_MODEL, 
+        on_delete=models.SET_NULL, # If doctor is deleted, keep the course
+        null=True, 
+        blank=True,
+        limit_choices_to={'role': 'DOCTOR'}, # Admin can only pick Doctors
+        related_name='teaching_courses'
+    )
 
     def __str__(self):
         return f"{self.code} - {self.name}"
@@ -35,3 +44,43 @@ class Grade(models.Model):
 
     def __str__(self):
         return f"{self.student} - {self.course}: {self.score}"
+
+
+
+class News(models.Model):
+    title = models.CharField(max_length=200)
+    content = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    image_url = models.CharField(max_length=500, blank=True, null=True) # Optional URL for an image
+    is_public = models.BooleanField(default=True)
+
+    def __str__(self):
+        return self.title
+
+    class Meta:
+        ordering = ['-created_at'] # Newest first
+
+
+
+class Attendance(models.Model):
+    STATUS_CHOICES = (
+        ('Present', 'Present'),
+        ('Absent', 'Absent'),
+        ('Late', 'Late'),
+    )
+    student = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='attendance')
+    course = models.ForeignKey(Course, on_delete=models.CASCADE)
+    date = models.DateField()
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES)
+
+    def __str__(self):
+        return f"{self.student} - {self.date}: {self.status}"
+
+class Material(models.Model):
+    course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='materials')
+    title = models.CharField(max_length=200)
+    file = models.FileField(upload_to='materials/') # Saves to /app/media/materials/
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.title

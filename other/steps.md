@@ -16,6 +16,10 @@ docker exec bsu_backend pip install djangorestframework-simplejwt
 docker exec bsu_backend python manage.py startapp core
 
 
+docker exec bsu_backend python manage.py collectstatic --noinput
+
+docker exec bsu_backend mkdir -p /app/media/materials
+
 
 ---
 
@@ -25,3 +29,11 @@ docker exec bsu_frontend npm install @mui/material @emotion/react @emotion/style
 
 
 docker exec bsu_frontend npm install react-router-dom
+
+
+
+--
+
+curl -X POST http://localhost:8000/api/upload-grades/ \
+  -H "Authorization: Bearer <YOUR_TOKEN>" \
+  -F "file=@grades.xlsx"
