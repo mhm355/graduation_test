@@ -20,4 +20,6 @@ urlpatterns = [
     path('upload-students/', views.UploadStudentsView.as_view(), name='upload_students'),
     path('students/', views.list_students, name='list_students'),
     path('students/<int:pk>/manage/', views.manage_student, name='manage_student'),
+    path('years/<int:pk>/', views.AcademicYearDetailView.as_view(), name='year_detail'),
+    path('levels/<int:pk>/', views.LevelDetailView.as_view(), name='level_detail'),
 ]

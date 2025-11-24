@@ -353,3 +353,15 @@ def manage_student(request, pk):
         student.username = request.data.get('username', student.username) # Student ID
         student.save()
         return Response({"status": "Student updated"})
+
+# 1. Delete Year Logic
+class AcademicYearDetailView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = AcademicYear.objects.all()
+    serializer_class = AcademicYearSerializer
+    permission_classes = [IsAuthenticated]
+
+# 2. Delete Level Logic
+class LevelDetailView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Level.objects.all()
+    serializer_class = LevelSerializer
+    permission_classes = [IsAuthenticated]
