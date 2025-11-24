@@ -23,6 +23,7 @@ from .models import DeletionRequest
 from .models import TeachingAssignment
 from .models import Certificate
 from .serializers import CertificateSerializer
+from django.db import IntegrityError
 
 User = get_user_model()
 
@@ -489,37 +490,59 @@ class UploadCertificateView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request, *args, **kwargs):
-        # Security: Only Staff Affairs can upload
-        if request.user.role != 'STAFF_AFFAIRS' and request.user.role != 'ADMIN':
-            return Response({"error": "Unauthorized"}, status=403)
+        # 1. Permission Check (Only Staff or Admin)
+        if request.user.role not in ['STAFF_AFFAIRS', 'ADMIN']:
+            return Response({"error": "Unauthorized. Only Staff Affairs can upload certificates."}, status=status.HTTP_403_FORBIDDEN)
 
         student_id = request.data.get('student_id')
         file = request.FILES.get('file')
 
         if not student_id or not file:
-            return Response({"error": "Student ID and File are required"}, status=400)
+            return Response({"error": "Student ID and File are required"}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
             student = User.objects.get(username=student_id)
             
-            # Create or Update (Overwrite old certificate)
-            cert, created = Certificate.objects.update_or_create(
-                student=student,
-                defaults={'file': file}
-            )
-            return Response({"status": "Certificate uploaded successfully!"})
-        except User.DoesNotExist:
-            return Response({"error": "Student not found"}, status=404)
+            # 2. Eligibility Check (Student must be 4th Year)
+            # This relies on the 'level' being set correctly during student registration
+            if student.level and student.level.name != "Fourth Year":
+                return Response(
+                    {"error": f"Student is in {student.level.name}. Certificates are for Fourth Year only."}, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # 3. Create or Update (Overwrite old certificate)
+            # OneToOneField ensures only one certificate per student.
+            # We use try/except for OneToOneField integrity
+            try:
+                cert, created = Certificate.objects.update_or_create(
+                    student=student,
+                    defaults={'file': file}
+                )
+                
+                return Response({"status": f"Certificate uploaded successfully! {'Created' if created else 'Updated'}."}, status=status.HTTP_201_CREATED)
+            
+            except IntegrityError:
+                 return Response({"error": "Certificate already exists for this student."}, status=status.HTTP_400_BAD_REQUEST)
 
-# 2. Student: Get MY Certificate
+
+        except User.DoesNotExist:
+            return Response({"error": "Student not found with that ID."}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+             # Catch general errors (like file write issues)
+             return Response({"error": f"An unknown error occurred during save: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+# 2. Restrict Download (Student Logic)
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def get_my_certificate(request):
-    try:
-        # Optional: Check if student is in "Fourth Year"
-        # if request.user.level.name != 'Fourth Year':
-        #     return Response({"error": "Not eligible yet"}, status=403)
+    
+    # --- NEW SECURITY CHECK ---
+    if request.user.level.name != "Fourth Year":
+        return Response({"error": "You are not eligible for a certificate yet."}, status=403)
+    # --------------------------
 
+    try:
         cert = Certificate.objects.get(student=request.user)
         serializer = CertificateSerializer(cert)
         return Response(serializer.data)
