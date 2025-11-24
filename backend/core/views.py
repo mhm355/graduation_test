@@ -270,23 +270,47 @@ class UploadStudentsView(APIView):
             df = pd.read_excel(file_obj)
             
             created_count = 0
-            for index, row in df.iterrows():
-                # Expects: student_id, student_name, national_id
-                username = str(row['student_id'])
-                name = row['student_name']
-                national_id = str(row['national_id'])
-                
-                # Create User if not exists
-                if not User.objects.filter(username=username).exists():
-                    User.objects.create_user(
-                        username=username,
-                        password=national_id, # Default password is National ID
-                        first_name=name,
-                        role='STUDENT',
-                        national_id=national_id
-                    )
-                    created_count += 1
+            updated_count = 0
             
-            return Response({"status": f"Successfully registered {created_count} new students!"})
+            for index, row in df.iterrows():
+                # 1. Read Columns (We use .get() or handle missing keys safely if needed)
+                # We expect: department, level, semester, student_id, student_name
+                
+                # Clean the data (convert to string and remove spaces)
+                dept_name = str(row['department']).strip()
+                level_name = str(row['level']).strip()
+                username = str(row['student_id']).strip()
+                full_name = str(row['student_name']).strip()
+                
+                # 2. Find Department & Level
+                try:
+                    # Case-insensitive search (__iexact) helps with "Electrical" vs "electrical"
+                    department = Department.objects.get(name__iexact=dept_name)
+                    level = Level.objects.get(name__iexact=level_name)
+                except (Department.DoesNotExist, Level.DoesNotExist):
+                    # If Dept/Level wrong, skip this student
+                    print(f"Skipping {username}: Dept '{dept_name}' or Level '{level_name}' not found.")
+                    continue
+
+                # 3. Create or Update User
+                user, created = User.objects.update_or_create(
+                    username=username,
+                    defaults={
+                        'first_name': full_name,
+                        'role': 'STUDENT',
+                        'department': department,
+                        'level': level,
+                    }
+                )
+                
+                if created:
+                    user.set_password(username) # Set Password = Student ID
+                    user.save()
+                    created_count += 1
+                else:
+                    updated_count += 1
+            
+            return Response({"status": f"Processed: {created_count} Created, {updated_count} Updated."})
         except Exception as e:
+            # This catches errors like missing columns
             return Response({"error": str(e)}, status=400)
