@@ -6,7 +6,8 @@ import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import FolderIcon from '@mui/icons-material/Folder';
 import PeopleIcon from '@mui/icons-material/People';
 import AssessmentIcon from '@mui/icons-material/Assessment';
-import DeleteIcon from '@mui/icons-material/Delete'; // <--- NEW IMPORT
+import DeleteIcon from '@mui/icons-material/Delete';
+import EditIcon from '@mui/icons-material/Edit'; // <--- NEW IMPORT
 
 export default function DoctorCourseManage() {
   const { id } = useParams(); 
@@ -18,10 +19,16 @@ export default function DoctorCourseManage() {
   const [attendance, setAttendance] = useState([]);
   const [materials, setMaterials] = useState([]);
 
+  // Upload States
   const [openUpload, setOpenUpload] = useState(false);
   const [file, setFile] = useState(null);
   const [materialTitle, setMaterialTitle] = useState("");
   const [uploadMsg, setUploadMsg] = useState(null);
+
+  // --- NEW: Edit Grade States ---
+  const [openEdit, setOpenEdit] = useState(false);
+  const [selectedGrade, setSelectedGrade] = useState(null);
+  const [newScore, setNewScore] = useState("");
 
   useEffect(() => {
     fetchCourseDetails();
@@ -61,22 +68,38 @@ export default function DoctorCourseManage() {
     } catch (err) { console.error(err); }
   };
 
-  // --- DELETE LOGIC (NEW) ---
+  // --- FILE DELETE LOGIC ---
   const handleDeleteMaterial = async (materialId) => {
-    if (!window.confirm("Are you sure you want to delete this file?")) return;
-
+    if (!window.confirm("Delete this file?")) return;
     try {
         await axios.delete(`/api/material/${materialId}/delete/`, getAuth());
-        // Refresh list immediately
         setMaterials(prev => prev.filter(m => m.id !== materialId));
-    } catch (err) {
-        alert("Failed to delete file.");
-    }
+    } catch (err) { alert("Failed to delete."); }
   };
 
+  // --- GRADE EDIT LOGIC (NEW) ---
+  const handleEditGradeClick = (grade) => {
+    setSelectedGrade(grade);
+    setNewScore(grade.score);
+    setOpenEdit(true);
+  };
+
+  const handleSaveGrade = async () => {
+    if (!selectedGrade) return;
+    try {
+        // Call the API we made earlier: PUT /api/doctor/grades/<id>/update/
+        await axios.put(`/api/doctor/grades/${selectedGrade.id}/update/`, 
+            { score: newScore }, 
+            getAuth()
+        );
+        setOpenEdit(false);
+        fetchGrades(); // Refresh table to show new score
+    } catch (err) { alert("Failed to update grade."); }
+  };
+
+  // --- MATERIAL UPLOAD LOGIC ---
   const handleUploadSubmit = async () => {
     if (!file || !materialTitle) return;
-
     const formData = new FormData();
     formData.append("course_code", course.code);
     formData.append("title", materialTitle);
@@ -87,24 +110,16 @@ export default function DoctorCourseManage() {
       await axios.post("/api/upload-material/", formData, {
         headers: { "Content-Type": "multipart/form-data", Authorization: `Bearer ${token}` }
       });
-      setUploadMsg({ type: "success", text: "Material uploaded successfully!" });
-      setTimeout(() => {
-          setOpenUpload(false);
-          fetchMaterials(); 
-          setFile(null);
-          setMaterialTitle("");
-          setUploadMsg(null);
-      }, 1500);
-    } catch (err) {
-      setUploadMsg({ type: "error", text: "Upload failed. Check permissions." });
-    }
+      setUploadMsg({ type: "success", text: "Success!" });
+      setTimeout(() => { setOpenUpload(false); fetchMaterials(); setFile(null); setMaterialTitle(""); }, 1000);
+    } catch (err) { setUploadMsg({ type: "error", text: "Upload failed." }); }
   };
 
-  if (!course) return <Typography p={4}>Loading Course...</Typography>;
+  if (!course) return <Typography p={4}>Loading...</Typography>;
 
   return (
     <Container maxWidth="lg" sx={{ mt: 4 }}>
-      <Button onClick={() => navigate("/doctor/courses")} sx={{ mb: 2 }}>← Back to My Courses</Button>
+      <Button onClick={() => navigate("/doctor/courses")} sx={{ mb: 2 }}>← Back</Button>
       
       <Paper sx={{ p: 3, mb: 3, bgcolor: "#e3f2fd" }}>
         <Typography variant="h4" fontWeight="bold" color="primary">{course.name}</Typography>
@@ -119,37 +134,26 @@ export default function DoctorCourseManage() {
         </Tabs>
       </Paper>
 
-      {/* TAB 1: MATERIALS (With Delete) */}
+      {/* TAB 1: MATERIALS */}
       {tabIndex === 0 && (
         <Box>
             <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
                 <Typography variant="h6">Course Files</Typography>
-                <Button variant="contained" startIcon={<CloudUploadIcon />} onClick={() => setOpenUpload(true)}>
-                    Upload New Material
-                </Button>
+                <Button variant="contained" startIcon={<CloudUploadIcon />} onClick={() => setOpenUpload(true)}>Upload</Button>
             </Box>
-            
             {materials.map(m => (
-                <Paper key={m.id} sx={{ p: 2, mb: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Paper key={m.id} sx={{ p: 2, mb: 1, display: 'flex', justifyContent: 'space-between' }}>
                     <Box>
                         <Typography fontWeight="bold">{m.title}</Typography>
-                        <Typography variant="caption" color="textSecondary">
-                            Uploaded: {new Date(m.uploaded_at).toLocaleDateString()}
-                        </Typography>
+                        <Typography variant="caption">{new Date(m.uploaded_at).toLocaleDateString()}</Typography>
                     </Box>
-                    
-                    {/* DELETE BUTTON ADDED HERE */}
-                    <IconButton color="error" onClick={() => handleDeleteMaterial(m.id)}>
-                        <DeleteIcon />
-                    </IconButton>
+                    <IconButton color="error" onClick={() => handleDeleteMaterial(m.id)}><DeleteIcon /></IconButton>
                 </Paper>
             ))}
-            
-            {materials.length === 0 && <Typography color="textSecondary">No files uploaded.</Typography>}
         </Box>
       )}
 
-      {/* TAB 2: GRADES */}
+      {/* TAB 2: GRADES (Updated) */}
       {tabIndex === 1 && (
         <Box>
             <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
@@ -158,13 +162,25 @@ export default function DoctorCourseManage() {
             </Box>
             <TableContainer component={Paper}>
                 <Table>
-                    <TableHead sx={{ bgcolor: "#eee" }}><TableRow><TableCell>Student</TableCell><TableCell>Score</TableCell><TableCell>Grade</TableCell></TableRow></TableHead>
+                    <TableHead sx={{ bgcolor: "#eee" }}>
+                        <TableRow>
+                            <TableCell>Student</TableCell>
+                            <TableCell>Score</TableCell>
+                            <TableCell>Grade</TableCell>
+                            <TableCell>Action</TableCell> {/* New Column */}
+                        </TableRow>
+                    </TableHead>
                     <TableBody>
                         {grades.map(g => (
                             <TableRow key={g.id}>
                                 <TableCell>{g.student}</TableCell>
-                                <TableCell>{g.score}</TableCell>
+                                <TableCell sx={{ fontWeight: 'bold' }}>{g.score}</TableCell>
                                 <TableCell>{g.letter_grade}</TableCell>
+                                <TableCell>
+                                    <IconButton color="primary" size="small" onClick={() => handleEditGradeClick(g)}>
+                                        <EditIcon />
+                                    </IconButton>
+                                </TableCell>
                             </TableRow>
                         ))}
                     </TableBody>
@@ -188,9 +204,7 @@ export default function DoctorCourseManage() {
                             <TableRow key={a.id}>
                                 <TableCell>{a.date}</TableCell>
                                 <TableCell>{a.student}</TableCell>
-                                <TableCell>
-                                    <Chip label={a.status} color={a.status === "Present" ? "success" : "error"} size="small" />
-                                </TableCell>
+                                <TableCell><Chip label={a.status} color={a.status === "Present" ? "success" : "error"} size="small" /></TableCell>
                             </TableRow>
                         ))}
                     </TableBody>
@@ -199,23 +213,33 @@ export default function DoctorCourseManage() {
         </Box>
       )}
 
+      {/* --- DIALOG 1: UPLOAD MATERIAL --- */}
       <Dialog open={openUpload} onClose={() => setOpenUpload(false)} fullWidth maxWidth="sm">
         <DialogTitle>Upload Material</DialogTitle>
         <DialogContent>
-          <TextField 
-            autoFocus margin="dense" label="Material Title" fullWidth variant="outlined" 
-            value={materialTitle} onChange={(e) => setMaterialTitle(e.target.value)} 
-            sx={{ mb: 2 }}
-          />
-          <Button component="label" variant="outlined" fullWidth startIcon={<CloudUploadIcon />}>
-            {file ? file.name : "Select PDF File"}
-            <input type="file" hidden accept=".pdf,.doc,.ppt" onChange={(e) => setFile(e.target.files[0])} />
-          </Button>
+          <TextField autoFocus margin="dense" label="Title" fullWidth value={materialTitle} onChange={(e) => setMaterialTitle(e.target.value)} />
+          <Button component="label" fullWidth sx={{ mt: 2 }}>{file ? file.name : "Select File"}<input type="file" hidden onChange={(e) => setFile(e.target.files[0])} /></Button>
           {uploadMsg && <Alert severity={uploadMsg.type} sx={{ mt: 2 }}>{uploadMsg.text}</Alert>}
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setOpenUpload(false)}>Cancel</Button>
           <Button onClick={handleUploadSubmit} variant="contained">Upload</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* --- DIALOG 2: EDIT GRADE --- */}
+      <Dialog open={openEdit} onClose={() => setOpenEdit(false)}>
+        <DialogTitle>Edit Grade</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" gutterBottom>Student: {selectedGrade?.student}</Typography>
+          <TextField 
+            autoFocus margin="dense" label="Score" type="number" fullWidth 
+            value={newScore} onChange={(e) => setNewScore(e.target.value)} 
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenEdit(false)}>Cancel</Button>
+          <Button onClick={handleSaveGrade} variant="contained">Save</Button>
         </DialogActions>
       </Dialog>
 
