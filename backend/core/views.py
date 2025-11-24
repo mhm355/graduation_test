@@ -59,7 +59,7 @@ def get_my_attendance(request):
 # 2. Doctor: Upload Attendance Excel
 class UploadAttendanceView(APIView):
     parser_classes = (MultiPartParser, FormParser)
-    permission_classes = [IsAuthenticated] # 1. User must be logged in
+    permission_classes = [IsAuthenticated]
 
     def post(self, request, *args, **kwargs):
         if 'file' not in request.FILES:
@@ -69,19 +69,17 @@ class UploadAttendanceView(APIView):
         try:
             df = pd.read_excel(file_obj)
             for index, row in df.iterrows():
-                # Excel Columns: student_id, course_code, date (YYYY-MM-DD), status
                 student_username = str(row['student_id'])
                 course_code = row['course_code']
                 
-                # Handle Date Parsing (Ensure it is YYYY-MM-DD)
+                # Handle Date Parsing
                 raw_date = row['date']
-                # If Excel gives a timestamp, convert to string
                 if hasattr(raw_date, 'strftime'):
                     date_str = raw_date.strftime('%Y-%m-%d')
                 else:
                     date_str = str(raw_date)
 
-                status_val = row['status'] # Present/Absent
+                status_val = row['status']
 
                 # 1. Find the Course
                 try:
@@ -89,15 +87,19 @@ class UploadAttendanceView(APIView):
                 except Course.DoesNotExist:
                      return Response({"error": f"Course {course_code} not found"}, status=404)
 
-                # --- 2. SECURITY CHECK START ---
-                # Check if this doctor owns this course
+                # --- SECURITY CHECK (UPDATED) ---
                 if request.user.role == 'DOCTOR':
-                    if course.doctor != request.user:
+                    is_assigned = TeachingAssignment.objects.filter(
+                        doctor=request.user, 
+                        course=course
+                    ).exists()
+                    
+                    if not is_assigned:
                          return Response(
                             {"error": f"Security Alert: You are not assigned to teach {course_code}."}, 
                             status=status.HTTP_403_FORBIDDEN
                         )
-                # --- SECURITY CHECK END ---
+                # -------------------------------
 
                 # 3. Find Student & Save
                 try:
@@ -118,7 +120,7 @@ class UploadAttendanceView(APIView):
 
 class UploadGradesView(APIView):
     parser_classes = (MultiPartParser, FormParser)
-    permission_classes = [IsAuthenticated] # 1. User must be logged in
+    permission_classes = [IsAuthenticated]
 
     def post(self, request, *args, **kwargs):
         if 'file' not in request.FILES:
@@ -141,16 +143,20 @@ class UploadGradesView(APIView):
                 except Course.DoesNotExist:
                     return Response({"error": f"Course {course_code} does not exist"}, status=404)
 
-                # --- 2. SECURITY CHECK START ---
-                # If the user is a DOCTOR, check if they own this course.
-                # Admins can upload for anyone, so we skip them.
+                # --- SECURITY CHECK (UPDATED) ---
                 if request.user.role == 'DOCTOR':
-                    if course.doctor != request.user:
+                    # Check TeachingAssignment table
+                    is_assigned = TeachingAssignment.objects.filter(
+                        doctor=request.user, 
+                        course=course
+                    ).exists()
+                    
+                    if not is_assigned:
                          return Response(
                             {"error": f"Security Alert: You are not assigned to teach {course_code}."}, 
                             status=status.HTTP_403_FORBIDDEN
                         )
-                # --- SECURITY CHECK END ---
+                # -------------------------------
 
                 try:
                     student = User.objects.get(username=student_username)
@@ -178,11 +184,22 @@ class UploadMaterialView(APIView):
         title = request.data.get('title')
         file = request.FILES.get('file')
 
-        course = Course.objects.get(code=course_code)
+        try:
+            course = Course.objects.get(code=course_code)
+        except Course.DoesNotExist:
+            return Response({"error": "Course not found"}, status=404)
 
-        # Security Check
-        if request.user.role == 'DOCTOR' and course.doctor != request.user:
-            return Response({"error": "Not your course!"}, status=403)
+        # --- SECURITY CHECK FIX START ---
+        if request.user.role == 'DOCTOR':
+            # Check the TeachingAssignment table instead of course.doctor
+            is_assigned = TeachingAssignment.objects.filter(
+                doctor=request.user, 
+                course=course
+            ).exists()
+            
+            if not is_assigned:
+                return Response({"error": "Not your course! Assignment not found."}, status=403)
+        # --- SECURITY CHECK FIX END ---
 
         Material.objects.create(course=course, title=title, file=file)
         return Response({"status": "Material uploaded!"})
