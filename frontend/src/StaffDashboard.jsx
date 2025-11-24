@@ -46,19 +46,27 @@ export default function StaffDashboard() {
 
     // --- DELETE LOGIC ---
     const handleDelete = async (e, type, id) => {
-        e.stopPropagation(); // Stop the card from being clicked
-        if (!window.confirm("Are you sure? This might delete related data.")) return;
+        e.stopPropagation();
+        if (!window.confirm("Are you sure? This will send a deletion request to the Admin.")) return;
 
         const token = localStorage.getItem("access_token");
         const url = type === "YEAR" ? `/api/years/${id}/` : `/api/levels/${id}/`;
 
         try {
-            await axios.delete(url, { headers: { Authorization: `Bearer ${token}` } });
-            // Update UI instantly
-            if (type === "YEAR") setYears(years.filter(y => y.id !== id));
-            if (type === "LEVEL") setLevels(levels.filter(l => l.id !== id));
+            const res = await axios.delete(url, { headers: { Authorization: `Bearer ${token}` } });
+
+            // Check the status code
+            if (res.status === 202) {
+                // It was a REQUEST, not a delete
+                alert("Request Sent! An Admin must approve this deletion.");
+                // DO NOT remove it from the UI yet
+            } else {
+                // It was an instant delete (if you were Admin)
+                if (type === "YEAR") setYears(years.filter(y => y.id !== id));
+                if (type === "LEVEL") setLevels(levels.filter(l => l.id !== id));
+            }
         } catch (err) {
-            alert("Failed to delete. It might be in use.");
+            alert("Failed to send request.");
         }
     };
 

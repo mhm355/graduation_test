@@ -1,6 +1,6 @@
-from django.contrib import admin
-from .models import Department, Course, Grade, News
 
+from django.contrib import admin, messages
+from .models import Department, Course, Grade, News, Attendance, Material, AcademicYear, Level, DeletionRequest
 @admin.register(Department)
 class DepartmentAdmin(admin.ModelAdmin):
     list_display = ('name', 'code')
@@ -20,3 +20,33 @@ class GradeAdmin(admin.ModelAdmin):
 class NewsAdmin(admin.ModelAdmin):
     list_display = ('title', 'created_at', 'is_public')
     list_filter = ('is_public',)
+
+@admin.register(DeletionRequest)
+class DeletionRequestAdmin(admin.ModelAdmin):
+    list_display = ('requester', 'target_type', 'target_name', 'created_at', 'is_approved')
+    actions = ['approve_deletion']
+
+    @admin.action(description='Approve selected deletion requests')
+    def approve_deletion(self, request, queryset):
+        for req in queryset:
+            if req.is_approved:
+                continue # Skip if already done
+
+            try:
+                # 1. Find the item to delete
+                if req.target_type == 'YEAR':
+                    item = AcademicYear.objects.get(id=req.target_id)
+                elif req.target_type == 'LEVEL':
+                    item = Level.objects.get(id=req.target_id)
+                
+                # 2. Delete it
+                item.delete()
+                
+                # 3. Mark request as approved
+                req.is_approved = True
+                req.save()
+                self.message_user(request, f"Deleted {req.target_type}: {req.target_name}", messages.SUCCESS)
+            
+            except (AcademicYear.DoesNotExist, Level.DoesNotExist):
+                self.message_user(request, f"Item {req.target_name} already deleted or not found.", messages.WARNING)
+                req.delete() # Clean up invalid request

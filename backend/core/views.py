@@ -19,6 +19,7 @@ from .models import Department, AcademicYear, Level
 from .serializers import DepartmentSerializer, AcademicYearSerializer, LevelSerializer
 from users.serializers import StudentSerializer
 from users.models import User
+from .models import DeletionRequest
 
 User = get_user_model()
 
@@ -354,14 +355,46 @@ def manage_student(request, pk):
         student.save()
         return Response({"status": "Student updated"})
 
-# 1. Delete Year Logic
+# 1. Year Delete Logic
 class AcademicYearDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = AcademicYear.objects.all()
     serializer_class = AcademicYearSerializer
     permission_classes = [IsAuthenticated]
 
-# 2. Delete Level Logic
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        
+        # If user is Admin, delete immediately
+        if request.user.role == 'ADMIN':
+            self.perform_destroy(instance)
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        
+        # If Staff, create a REQUEST instead
+        DeletionRequest.objects.create(
+            requester=request.user,
+            target_type='YEAR',
+            target_id=instance.id,
+            target_name=instance.year
+        )
+        return Response({"status": "Deletion request sent to Admin for approval."}, status=status.HTTP_202_ACCEPTED)
+
+# 2. Level Delete Logic
 class LevelDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Level.objects.all()
     serializer_class = LevelSerializer
     permission_classes = [IsAuthenticated]
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        
+        if request.user.role == 'ADMIN':
+            self.perform_destroy(instance)
+            return Response(status=status.HTTP_204_NO_CONTENT)
+            
+        DeletionRequest.objects.create(
+            requester=request.user,
+            target_type='LEVEL',
+            target_id=instance.id,
+            target_name=instance.name
+        )
+        return Response({"status": "Deletion request sent to Admin for approval."}, status=status.HTTP_202_ACCEPTED)
