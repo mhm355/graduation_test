@@ -14,4 +14,7 @@ urlpatterns = [
     path('courses/<int:course_id>/materials/', views.get_course_materials, name='get_course_materials'),
     path('doctor/courses/', views.get_doctor_courses, name='get_doctor_courses'),
     path('material/<int:pk>/delete/', views.delete_material, name='delete_material'),
+    path('departments/', views.DepartmentListCreateView.as_view(), name='department_list_create'),
+    path('years/', views.AcademicYearListCreateView.as_view(), name='year_list_create'),
+    path('levels/', views.LevelListCreateView.as_view(), name='level_list_create'),
 ]

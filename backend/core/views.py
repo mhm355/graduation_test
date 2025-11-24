@@ -15,8 +15,12 @@ from .models import Attendance
 from .serializers import AttendanceSerializer
 from .models import Material
 from .serializers import MaterialSerializer
+from .models import Department, AcademicYear, Level
+from .serializers import DepartmentSerializer, AcademicYearSerializer, LevelSerializer
 
 User = get_user_model()
+
+
 
 #  EXISTING VIEWS 
 
@@ -234,3 +238,21 @@ def delete_material(request, pk):
         return Response({"status": "File deleted"})
     except Material.DoesNotExist:
         return Response(status=404)
+
+# 1. Manage Departments
+class DepartmentListCreateView(generics.ListCreateAPIView):
+    queryset = Department.objects.all()
+    serializer_class = DepartmentSerializer
+    permission_classes = [IsAuthenticated] # In real app, add IsStaffAffairs permission
+
+# 2. Manage Academic Years
+class AcademicYearListCreateView(generics.ListCreateAPIView):
+    queryset = AcademicYear.objects.all()
+    serializer_class = AcademicYearSerializer
+    permission_classes = [IsAuthenticated]
+
+# 3. Manage Levels
+class LevelListCreateView(generics.ListCreateAPIView):
+    queryset = Level.objects.all()
+    serializer_class = LevelSerializer
+    permission_classes = [IsAuthenticated]
