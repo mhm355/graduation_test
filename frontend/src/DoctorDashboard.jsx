@@ -1,8 +1,7 @@
-import { Container, Typography, Box, Paper, Button, Grid, Card, CardContent } from "@mui/material";
+import { Container, Typography, Box, Paper, Button, Grid, Card, CardContent, CardActionArea } from "@mui/material";
 import { useNavigate } from "react-router-dom";
-import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import SchoolIcon from '@mui/icons-material/School';
-import EventNoteIcon from '@mui/icons-material/EventNote';
+import EventNoteIcon from '@mui/icons-material/EventNote'; // For Exam Schedule later
 
 export default function DoctorDashboard() {
     const navigate = useNavigate();
@@ -15,24 +14,18 @@ export default function DoctorDashboard() {
     const sections = [
         {
             title: "My Courses",
-            desc: "View courses, upload materials, and edit grades.",
+            desc: "Manage grades, attendance, and course materials.",
             icon: <SchoolIcon fontSize="large" color="primary" />,
             action: () => navigate("/doctor/courses"),
-            btnText: "Manage Courses"
+            btnText: "View Assigned Courses"
         },
+        // Placeholder for the next feature (Exams) so the page isn't too empty
         {
-            title: "Bulk Upload Grades",
-            desc: "Upload Excel sheet for multiple students.",
-            icon: <CloudUploadIcon fontSize="large" color="secondary" />,
-            action: () => navigate("/upload"),
-            btnText: "Upload Excel"
-        },
-        {
-            title: "Bulk Upload Attendance",
-            desc: "Upload daily attendance sheet.",
-            icon: <EventNoteIcon fontSize="large" color="success" />,
-            action: () => navigate("/doctor/attendance"),
-            btnText: "Upload Sheet"
+            title: "Exam Schedule",
+            desc: "View upcoming exam dates and locations.",
+            icon: <EventNoteIcon fontSize="large" color="secondary" />,
+            action: () => alert("Exam Module Coming in Next Phase"),
+            btnText: "View Schedule"
         }
     ];
 
@@ -52,27 +45,24 @@ export default function DoctorDashboard() {
             <Paper sx={{ p: 3, mb: 4, bgcolor: "#fff3e0", borderLeft: "6px solid #ff9800" }}>
                 <Typography variant="h6" fontWeight="bold">Academic Staff Portal</Typography>
                 <Typography variant="body1">
-                    Welcome, Doctor. Select an action below to manage your academic duties.
+                    Welcome, Doctor. Access your courses below to manage students and results.
                 </Typography>
             </Paper>
 
             {/* Action Grid */}
             <Grid container spacing={3}>
                 {sections.map((item, index) => (
-                    <Grid item xs={12} md={4} key={index}>
-                        <Card elevation={3} sx={{ height: "100%", textAlign: "center", py: 2 }}>
-                            <CardContent>
+                    <Grid item xs={12} md={6} key={index}>
+                        <Card elevation={3} sx={{ height: "100%" }}>
+                            <CardActionArea onClick={item.action} sx={{ height: "100%", p: 2, textAlign: "center" }}>
                                 <Box mb={2}>{item.icon}</Box>
-                                <Typography variant="h6" gutterBottom fontWeight="bold">
+                                <Typography variant="h5" gutterBottom fontWeight="bold">
                                     {item.title}
                                 </Typography>
-                                <Typography variant="body2" color="textSecondary" mb={3}>
+                                <Typography variant="body1" color="textSecondary">
                                     {item.desc}
                                 </Typography>
-                                <Button variant="outlined" fullWidth onClick={item.action}>
-                                    {item.btnText}
-                                </Button>
-                            </CardContent>
+                            </CardActionArea>
                         </Card>
                     </Grid>
                 ))}
