@@ -118,8 +118,8 @@ class TeachingAssignment(models.Model):
     level = models.ForeignKey(Level, on_delete=models.CASCADE)
     semester = models.CharField(max_length=10, choices=Course.SEMESTER_CHOICES)
 
-    # class Meta:
-    #    unique_together = ('doctor', 'course', 'academic_year', 'level', 'semester')
+    class Meta:
+        unique_together = ('doctor', 'course', 'academic_year', 'level', 'semester')
 
     def __str__(self):
         return f"{self.doctor.username} -> {self.course.code} ({self.academic_year})"
