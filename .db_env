@@ -1,0 +1,4 @@
+MYSQL_ROOT_PASSWORD=admin
+MYSQL_DATABASE=bsu_db
+MYSQL_USER=db_user
+MYSQL_PASSWORD=db_passwd
