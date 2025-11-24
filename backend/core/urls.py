@@ -25,4 +25,5 @@ urlpatterns = [
     path('doctor/attendance/', views.ManageAttendanceView.as_view(), name='doctor_attendance'),
     path('upload-certificate/', views.UploadCertificateView.as_view(), name='upload_certificate'),
     path('my-certificate/', views.get_my_certificate, name='get_my_certificate'),
+    path('profile/', views.get_user_profile, name='user_profile'),
 ]

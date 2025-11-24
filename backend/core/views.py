@@ -34,9 +34,23 @@ User = get_user_model()
 
 @api_view(['GET'])
 def get_courses(request):
+    # Ideally filter by student's department/level, but for now all courses:
     courses = Course.objects.all()
-    serializer = CourseSerializer(courses, many=True)
+    
+    # PASS CONTEXT SO SERIALIZER KNOWS THE USER
+    serializer = CourseSerializer(courses, many=True, context={'request': request})
+    
     return Response(serializer.data)
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_user_profile(request):
+    user = request.user
+    return Response({
+        "username": user.username,
+        "role": user.role,
+        "level": user.level.name if user.level else "Unknown"
+    })
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])

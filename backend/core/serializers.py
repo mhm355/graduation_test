@@ -18,17 +18,38 @@ class LevelSerializer(serializers.ModelSerializer):
         fields = '__all__'
 class CourseSerializer(serializers.ModelSerializer):
     department_name = serializers.CharField(source='department.name', read_only=True)
-    # --- ADD LEVEL NAME HERE ---
-    level_name = SerializerMethodField()
-
-    def get_level_name(self, obj):
-        # Check if obj.level exists before accessing .name
-        return obj.level.name if obj.level else "N/A - Assign Level"
+    level_name = serializers.CharField(source='level.name', read_only=True, default="N/A")
+    
+    # --- NEW FIELDS ---
+    student_grade = serializers.SerializerMethodField()
+    student_attendance = serializers.SerializerMethodField()
 
     class Meta:
         model = Course
-        fields = ['id', 'code', 'name', 'credit_hours', 'department_name', 'level_name']
+        fields = [
+            'id', 'code', 'name', 'credit_hours', 'department_name', 'level_name',
+            'student_grade', 'student_attendance' # <--- Add them
+        ]
 
+    def get_student_grade(self, obj):
+        user = self.context.get('request').user
+        if user.is_anonymous: return None
+        try:
+            # Find grade for this specific student and course
+            grade = Grade.objects.get(student=user, course=obj)
+            return {"score": grade.score, "letter": grade.letter_grade}
+        except Grade.DoesNotExist:
+            return None
+
+    def get_student_attendance(self, obj):
+        user = self.context.get('request').user
+        if user.is_anonymous: return None
+        try:
+            # Find attendance for this specific student and course
+            att = Attendance.objects.get(student=user, course=obj)
+            return {"percentage": att.percentage, "attended": att.attended_lectures, "total": att.total_lectures}
+        except Attendance.DoesNotExist:
+            return None
 class GradeSerializer(serializers.ModelSerializer):
     # Existing fields
     course_name = serializers.CharField(source='course.name', read_only=True)
