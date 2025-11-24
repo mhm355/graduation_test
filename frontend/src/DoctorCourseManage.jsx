@@ -207,24 +207,42 @@ export default function DoctorCourseManage() {
       {/* TAB 3: ATTENDANCE */}
       {tabIndex === 2 && (
         <Box>
-            <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-                <Typography variant="h6">Attendance Log</Typography>
-                <Button variant="contained" color="success" onClick={() => navigate("/doctor/attendance")}>Bulk Upload Excel</Button>
-            </Box>
-            <TableContainer component={Paper}>
-                <Table>
-                    <TableHead sx={{ bgcolor: "#eee" }}><TableRow><TableCell>Date</TableCell><TableCell>Student</TableCell><TableCell>Status</TableCell></TableRow></TableHead>
-                    <TableBody>
-                        {attendance.map(a => (
-                            <TableRow key={a.id}>
-                                <TableCell>{a.date}</TableCell>
-                                <TableCell>{a.student}</TableCell>
-                                <TableCell><Chip label={a.status} color={a.status === "Present" ? "success" : "error"} size="small" /></TableCell>
-                            </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
-            </TableContainer>
+          <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+            <Typography variant="h6">Attendance Log</Typography>
+            <Button variant="contained" color="success" onClick={() => navigate("/doctor/attendance")}>Bulk Upload Excel</Button>
+          </Box>
+          <TableContainer component={Paper}>
+            <Table>
+              <TableHead sx={{ bgcolor: "#eee" }}>
+                <TableRow>
+                  {/* CHANGED HEADERS */}
+                  <TableCell><strong>Student ID</strong></TableCell>
+                  <TableCell><strong>Student Name</strong></TableCell>
+                  <TableCell><strong>Attended</strong></TableCell>
+                  <TableCell><strong>Total</strong></TableCell>
+                  <TableCell><strong>Percentage</strong></TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {attendance.map(a => (
+                  <TableRow key={a.id}>
+                    {/* CHANGED DATA CELLS */}
+                    <TableCell>{a.student_id || "ID?"}</TableCell>
+                    <TableCell>{a.student_name || "Name?"}</TableCell>
+                    <TableCell>{a.attended_lectures}</TableCell>
+                    <TableCell>{a.total_lectures}</TableCell>
+                    <TableCell>
+                      <Chip
+                        label={`${a.percentage}%`}
+                        color={a.percentage < 75 ? "error" : "success"}
+                        size="small"
+                      />
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
         </Box>
       )}
 
