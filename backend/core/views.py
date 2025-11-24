@@ -266,10 +266,17 @@ def delete_material(request, pk):
     try:
         material = Material.objects.get(pk=pk)
         
-        # SECURITY CHECK: Does this doctor own the course?
+        # --- SECURITY CHECK FIX START ---
+        # Check if this doctor is assigned to this course via the TeachingAssignment table
         if request.user.role == 'DOCTOR':
-            if material.course.doctor != request.user:
-                return Response({"error": "Access Denied"}, status=403)
+            is_assigned = TeachingAssignment.objects.filter(
+                doctor=request.user, 
+                course=material.course
+            ).exists()
+            
+            if not is_assigned:
+                return Response({"error": "Access Denied: You are not assigned to this course."}, status=403)
+        # --- SECURITY CHECK FIX END ---
         
         # Delete the file from disk
         material.file.delete() 
