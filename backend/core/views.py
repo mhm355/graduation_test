@@ -251,26 +251,23 @@ def update_grade(request, pk):
 @permission_classes([IsAuthenticated])
 def get_doctor_courses(request):
     if request.user.role == 'DOCTOR':
-        # OLD WAY: courses = Course.objects.filter(doctor=request.user)
-        
-        # NEW WAY: Get assignments for this doctor
+        # 1. Get all assignments for this doctor
         assignments = TeachingAssignment.objects.filter(doctor=request.user)
-        
-        # We need to extract the 'course' from each assignment
-        # But we also want to know which Year/Level they are assigned to!
         
         data = []
         for assign in assignments:
+            # 2. Build the course object manually
+            # We grab the 'level' from the ASSIGNMENT, not the COURSE
             data.append({
                 "id": assign.course.id,
                 "code": assign.course.code,
                 "name": assign.course.name,
-                "department_name": assign.course.department.name,
                 "credit_hours": assign.course.credit_hours,
-                # Extra info from the assignment
-                "assigned_year": assign.academic_year.year,
-                "assigned_level": assign.level.name,
-                "assigned_semester": assign.semester,
+                "department_name": assign.course.department.name,
+                
+                # --- CRITICAL FIX ---
+                # Use the level from the Assignment (TeachingAssignment)
+                "level_name": assign.level.name if assign.level else "N/A" 
             })
             
         return Response(data)
