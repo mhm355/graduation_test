@@ -20,6 +20,7 @@ from .serializers import DepartmentSerializer, AcademicYearSerializer, LevelSeri
 from users.serializers import StudentSerializer
 from users.models import User
 from .models import DeletionRequest
+from .models import TeachingAssignment
 
 User = get_user_model()
 
