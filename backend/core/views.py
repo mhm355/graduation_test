@@ -21,6 +21,8 @@ from users.serializers import StudentSerializer
 from users.models import User
 from .models import DeletionRequest
 from .models import TeachingAssignment
+from .models import Certificate
+from .serializers import CertificateSerializer
 
 User = get_user_model()
 
@@ -63,59 +65,55 @@ class UploadAttendanceView(APIView):
 
     def post(self, request, *args, **kwargs):
         if 'file' not in request.FILES:
-            return Response({"error": "No file provided"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": "No file provided"}, status=400)
         
         file_obj = request.FILES['file']
         try:
             df = pd.read_excel(file_obj)
+            processed = 0
+            
             for index, row in df.iterrows():
-                student_username = str(row['student_id'])
-                course_code = row['course_code']
-                
-                # Handle Date Parsing
-                raw_date = row['date']
-                if hasattr(raw_date, 'strftime'):
-                    date_str = raw_date.strftime('%Y-%m-%d')
-                else:
-                    date_str = str(raw_date)
-
-                status_val = row['status']
-
-                # 1. Find the Course
                 try:
-                    course = Course.objects.get(code=course_code)
-                except Course.DoesNotExist:
-                     return Response({"error": f"Course {course_code} not found"}, status=404)
+                    # 1. Read Columns
+                    student_id = str(row['student_id']).strip()
+                    course_name = str(row['course_name']).strip()
+                    attended = int(row['attended_lectures']) # <--- NEW
+                    total = int(row['total_lectures'])       # <--- NEW
+                except KeyError as e:
+                    return Response({"error": f"Missing column: {e}"}, status=400)
 
-                # --- SECURITY CHECK (UPDATED) ---
+                # 2. Find Course by Name
+                try:
+                    course = Course.objects.get(name__iexact=course_name)
+                except Course.DoesNotExist:
+                    continue 
+
+                # 3. Security Check
                 if request.user.role == 'DOCTOR':
                     is_assigned = TeachingAssignment.objects.filter(
-                        doctor=request.user, 
-                        course=course
+                        doctor=request.user, course=course
                     ).exists()
-                    
                     if not is_assigned:
-                         return Response(
-                            {"error": f"Security Alert: You are not assigned to teach {course_code}."}, 
-                            status=status.HTTP_403_FORBIDDEN
-                        )
-                # -------------------------------
+                        return Response({"error": f"Security Alert: Not assigned to {course_name}"}, status=403)
 
-                # 3. Find Student & Save
+                # 4. Update/Create Record
                 try:
-                    student = User.objects.get(username=student_username)
+                    student = User.objects.get(username=student_id)
                     Attendance.objects.update_or_create(
                         student=student,
                         course=course,
-                        date=date_str,
-                        defaults={'status': status_val}
+                        defaults={
+                            'attended_lectures': attended,
+                            'total_lectures': total
+                        }
                     )
+                    processed += 1
                 except User.DoesNotExist:
-                    print(f"Student {student_username} not found")
+                    pass
 
-            return Response({"status": "Attendance uploaded successfully!"}, status=status.HTTP_201_CREATED)
+            return Response({"status": f"Updated attendance for {processed} students!"}, status=201)
         except Exception as e:
-            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": str(e)}, status=400)
         
 
 class UploadGradesView(APIView):
@@ -484,3 +482,46 @@ class ManageAttendanceView(generics.ListAPIView):
         if course_id:
             return Attendance.objects.filter(course_id=course_id)
         return Attendance.objects.none()
+
+# 1. Staff: Upload Certificate
+class UploadCertificateView(APIView):
+    parser_classes = (MultiPartParser, FormParser)
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        # Security: Only Staff Affairs can upload
+        if request.user.role != 'STAFF_AFFAIRS' and request.user.role != 'ADMIN':
+            return Response({"error": "Unauthorized"}, status=403)
+
+        student_id = request.data.get('student_id')
+        file = request.FILES.get('file')
+
+        if not student_id or not file:
+            return Response({"error": "Student ID and File are required"}, status=400)
+
+        try:
+            student = User.objects.get(username=student_id)
+            
+            # Create or Update (Overwrite old certificate)
+            cert, created = Certificate.objects.update_or_create(
+                student=student,
+                defaults={'file': file}
+            )
+            return Response({"status": "Certificate uploaded successfully!"})
+        except User.DoesNotExist:
+            return Response({"error": "Student not found"}, status=404)
+
+# 2. Student: Get MY Certificate
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_my_certificate(request):
+    try:
+        # Optional: Check if student is in "Fourth Year"
+        # if request.user.level.name != 'Fourth Year':
+        #     return Response({"error": "Not eligible yet"}, status=403)
+
+        cert = Certificate.objects.get(student=request.user)
+        serializer = CertificateSerializer(cert)
+        return Response(serializer.data)
+    except Certificate.DoesNotExist:
+        return Response({"error": "No certificate found"}, status=404)

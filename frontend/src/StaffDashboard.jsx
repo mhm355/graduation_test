@@ -122,8 +122,28 @@ export default function StaffDashboard() {
                 </Breadcrumbs>
             </Paper>
 
+            {/* --- STEP 1: MAIN DASHBOARD --- */}
             {step === 1 && (
                 <Box>
+
+                    {/* --- NEW: QUICK ACTIONS SECTION --- */}
+                    <Typography variant="h5" gutterBottom fontWeight="bold">Quick Actions</Typography>
+                    <Grid container spacing={3} sx={{ mb: 4 }}>
+                        <Grid item xs={12} md={4}>
+                            <Card elevation={3} sx={{ borderLeft: "6px solid #ed6c02" }}> {/* Orange accent */}
+                                <CardActionArea
+                                    onClick={() => navigate("/staff/certificate")}
+                                    sx={{ py: 3, textAlign: 'center' }}
+                                >
+                                    <SchoolIcon fontSize="large" color="warning" />
+                                    <Typography variant="h6" sx={{ mt: 1 }}>Upload Grad Certs</Typography>
+                                    <Typography variant="caption" color="textSecondary">For 4th Year Students</Typography>
+                                </CardActionArea>
+                            </Card>
+                        </Grid>
+                    </Grid>
+                    {/* ---------------------------------- */}
+
                     <Typography variant="h5" gutterBottom fontWeight="bold">Select Department</Typography>
                     <Grid container spacing={3}>
                         {departments.map((dept) => (

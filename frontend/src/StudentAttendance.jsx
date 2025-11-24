@@ -35,14 +35,31 @@ export default function StudentAttendance() {
                     <TableBody>
                         {records.map((r) => (
                             <TableRow key={r.id}>
-                                <TableCell>{r.date}</TableCell>
                                 <TableCell>{r.course_code} - {r.course_name}</TableCell>
-                                <TableCell>
-                                    <Chip
-                                        label={r.status}
-                                        color={r.status === "Present" ? "success" : "error"}
-                                        size="small"
-                                    />
+                                <TableCell align="center">
+                                    <Typography fontWeight="bold">
+                                        {r.attended_lectures} / {r.total_lectures}
+                                    </Typography>
+                                </TableCell>
+                                <TableCell align="center">
+                                    <Box display="flex" alignItems="center" gap={1}>
+                                        <LinearProgress
+                                            variant="determinate"
+                                            value={r.percentage}
+                                            sx={{
+                                                width: '100px',
+                                                height: 8,
+                                                borderRadius: 5,
+                                                bgcolor: '#e0e0e0',
+                                                '& .MuiLinearProgress-bar': {
+                                                    bgcolor: r.percentage < 75 ? '#d32f2f' : '#2e7d32' // Red if < 75%, Green if safe
+                                                }
+                                            }}
+                                        />
+                                        <Typography variant="body2" fontWeight="bold" color={r.percentage < 75 ? "error" : "success"}>
+                                            {r.percentage}%
+                                        </Typography>
+                                    </Box>
                                 </TableCell>
                             </TableRow>
                         ))}

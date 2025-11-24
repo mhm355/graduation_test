@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Department, AcademicYear, Level, Course, Grade, News, Attendance, Material
+from .models import Department, AcademicYear, Level, Course, Grade, News, Attendance, Material, Certificate
 
 class DepartmentSerializer(serializers.ModelSerializer):
     class Meta:
@@ -46,14 +46,21 @@ class NewsSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class AttendanceSerializer(serializers.ModelSerializer):
-    course_code = serializers.CharField(source='course.code', read_only=True)
     course_name = serializers.CharField(source='course.name', read_only=True)
-
+    course_code = serializers.CharField(source='course.code', read_only=True)
+    
     class Meta:
         model = Attendance
-        fields = ['id', 'course_code', 'course_name', 'date', 'status']
+        fields = ['id', 'course_name', 'course_code', 'attended_lectures', 'total_lectures', 'percentage']
 
 class MaterialSerializer(serializers.ModelSerializer):
     class Meta:
         model = Material
         fields = ['id', 'title', 'file', 'uploaded_at']
+
+class CertificateSerializer(serializers.ModelSerializer):
+    student_name = serializers.CharField(source='student.first_name', read_only=True)
+    
+    class Meta:
+        model = Certificate
+        fields = ['id', 'student', 'student_name', 'file', 'uploaded_at']

@@ -23,4 +23,6 @@ urlpatterns = [
     path('years/<int:pk>/', views.AcademicYearDetailView.as_view(), name='year_detail'),
     path('levels/<int:pk>/', views.LevelDetailView.as_view(), name='level_detail'),
     path('doctor/attendance/', views.ManageAttendanceView.as_view(), name='doctor_attendance'),
+    path('upload-certificate/', views.UploadCertificateView.as_view(), name='upload_certificate'),
+    path('my-certificate/', views.get_my_certificate, name='get_my_certificate'),
 ]

@@ -118,6 +118,14 @@ export default function Dashboard() {
                     >
                       View Materials
                     </Button>
+                    <Button
+                      variant="outlined"
+                      color="warning"
+                      fullWidth
+                      onClick={handleDownloadCert}
+                    >
+                      Graduation Certificate
+                    </Button>
                   </CardContent>
                 </Card>
               </Grid>

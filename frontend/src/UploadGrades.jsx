@@ -59,7 +59,7 @@ export default function UploadGrades() {
                 <Alert severity="info" sx={{ mb: 3, textAlign: 'left' }}>
                     <Typography variant="subtitle2" fontWeight="bold">Required Excel Columns:</Typography>
                     <Typography variant="body2" sx={{ fontFamily: 'monospace', mt: 1 }}>
-                        department | level | semester | student_id | student_name | course_name | score
+                        department | level | semester | course_name | student_id | student_name | score
                     </Typography>
                 </Alert>
 
