@@ -32,8 +32,10 @@ export default function Login() {
                 navigate("/doctor-dashboard");
             } else if (role === "STUDENT") {
                 navigate("/dashboard");
+            } else if (role === "STAFF_AFFAIRS") { // <--- ADD THIS
+                navigate("/staff-dashboard");
             } else {
-                navigate("/dashboard"); // Default 
+                navigate("/dashboard");
             }
 
         } catch (err) {
