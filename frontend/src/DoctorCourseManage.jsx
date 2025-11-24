@@ -246,7 +246,7 @@ export default function DoctorCourseManage() {
       <Dialog open={openEdit} onClose={() => setOpenEdit(false)}>
         <DialogTitle>Edit Grade</DialogTitle>
         <DialogContent>
-          <Typography variant="body2" gutterBottom>Student: {selectedGrade?.student}</Typography>
+          <Typography variant="body2" gutterBottom>Student: {selectedGrade?.student_name}</Typography>
           <TextField 
             autoFocus margin="dense" label="Score" type="number" fullWidth 
             value={newScore} onChange={(e) => setNewScore(e.target.value)} 

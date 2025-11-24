@@ -32,15 +32,31 @@ export default function DoctorCourses() {
           <Grid item xs={12} md={6} key={course.id}>
             <Card elevation={3} sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
               <CardContent sx={{ flexGrow: 1 }}>
+                {/* Course Code (e.g. EE101) */}
                 <Typography variant="overline" color="textSecondary">{course.code}</Typography>
+
+                {/* Course Name (e.g. Circuit Analysis) */}
                 <Typography variant="h5" fontWeight="bold" gutterBottom>{course.name}</Typography>
 
-                <Box mb={3}>
-                  {/* DISPLAY LEVEL NAME INSTEAD OF CREDITS */}
-                  <Chip label={course.level_name} color="primary" size="small" sx={{ mr: 1 }} />
-                  <Chip label={course.department_name} color="primary" size="small" variant="outlined" />
+                {/* Tags Section */}
+                <Box mb={3} display="flex" gap={1} flexWrap="wrap">
+                  {/* 1. Department Name */}
+                  <Chip
+                    label={course.department_name}
+                    color="primary"
+                    size="small"
+                    variant="outlined"
+                  />
+
+                  {/* 2. Level Name (e.g. First Year) */}
+                  <Chip
+                    label={course.level_name || "N/A"}
+                    color="primary"
+                    size="small"
+                  />
                 </Box>
 
+                {/* Action Button */}
                 <Box display="flex" gap={1}>
                   <Button
                     variant="contained"
