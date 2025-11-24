@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Container, Typography, Box, Paper, Tabs, Tab, Button, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Chip } from "@mui/material";
+import { Container, Typography, Box, Paper, Tabs, Tab, Button, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Chip, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Alert } from "@mui/material";
 import axios from "axios";
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import FolderIcon from '@mui/icons-material/Folder';
@@ -18,6 +18,12 @@ export default function DoctorCourseManage() {
     const [attendance, setAttendance] = useState([]);
     const [materials, setMaterials] = useState([]);
 
+    // Upload Dialog States
+    const [openUpload, setOpenUpload] = useState(false);
+    const [file, setFile] = useState(null);
+    const [materialTitle, setMaterialTitle] = useState("");
+    const [uploadMsg, setUploadMsg] = useState(null);
+
     useEffect(() => {
         fetchCourseDetails();
         fetchGrades();
@@ -28,10 +34,6 @@ export default function DoctorCourseManage() {
     const getAuth = () => ({ headers: { Authorization: `Bearer ${localStorage.getItem("access_token")}` } });
 
     const fetchCourseDetails = async () => {
-        // We can reuse the doctor courses list and find this one, or fetch specifically. 
-        // For simplicity, let's fetch all and filter (or assume we passed state).
-        // Ideally, create a specific API: /api/courses/{id}/
-        // Here we rely on the DoctorCourses list for context if passed, but fetching is safer.
         try {
             const res = await axios.get("/api/doctor/courses/", getAuth());
             const found = res.data.find(c => c.id === parseInt(id));
@@ -60,6 +62,33 @@ export default function DoctorCourseManage() {
         } catch (err) { console.error(err); }
     };
 
+    // --- MATERIAL UPLOAD LOGIC ---
+    const handleUploadSubmit = async () => {
+        if (!file || !materialTitle) return;
+
+        const formData = new FormData();
+        formData.append("course_code", course.code); // Use the code from the loaded course
+        formData.append("title", materialTitle);
+        formData.append("file", file);
+
+        try {
+            const token = localStorage.getItem("access_token");
+            await axios.post("/api/upload-material/", formData, {
+                headers: { "Content-Type": "multipart/form-data", Authorization: `Bearer ${token}` }
+            });
+            setUploadMsg({ type: "success", text: "Material uploaded successfully!" });
+            setTimeout(() => {
+                setOpenUpload(false);
+                fetchMaterials(); // Refresh list
+                setFile(null);
+                setMaterialTitle("");
+                setUploadMsg(null);
+            }, 1500);
+        } catch (err) {
+            setUploadMsg({ type: "error", text: "Upload failed. Check permissions." });
+        }
+    };
+
     if (!course) return <Typography p={4}>Loading Course...</Typography>;
 
     return (
@@ -85,8 +114,13 @@ export default function DoctorCourseManage() {
                 <Box>
                     <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
                         <Typography variant="h6">Course Files</Typography>
-                        {/* Re-use your upload logic/dialog here or link to a popup */}
-                        <Button variant="contained" startIcon={<CloudUploadIcon />}>Upload New Material</Button>
+                        <Button
+                            variant="contained"
+                            startIcon={<CloudUploadIcon />}
+                            onClick={() => setOpenUpload(true)}
+                        >
+                            Upload New Material
+                        </Button>
                     </Box>
                     {materials.map(m => (
                         <Paper key={m.id} sx={{ p: 2, mb: 1, display: 'flex', justifyContent: 'space-between' }}>
@@ -147,6 +181,27 @@ export default function DoctorCourseManage() {
                     </TableContainer>
                 </Box>
             )}
+
+            {/* --- UPLOAD DIALOG --- */}
+            <Dialog open={openUpload} onClose={() => setOpenUpload(false)} fullWidth maxWidth="sm">
+                <DialogTitle>Upload Material</DialogTitle>
+                <DialogContent>
+                    <TextField
+                        autoFocus margin="dense" label="Material Title" fullWidth variant="outlined"
+                        value={materialTitle} onChange={(e) => setMaterialTitle(e.target.value)}
+                        sx={{ mb: 2 }}
+                    />
+                    <Button component="label" variant="outlined" fullWidth startIcon={<CloudUploadIcon />}>
+                        {file ? file.name : "Select PDF File"}
+                        <input type="file" hidden accept=".pdf,.doc,.ppt" onChange={(e) => setFile(e.target.files[0])} />
+                    </Button>
+                    {uploadMsg && <Alert severity={uploadMsg.type} sx={{ mt: 2 }}>{uploadMsg.text}</Alert>}
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setOpenUpload(false)}>Cancel</Button>
+                    <Button onClick={handleUploadSubmit} variant="contained">Upload</Button>
+                </DialogActions>
+            </Dialog>
 
         </Container>
     );
