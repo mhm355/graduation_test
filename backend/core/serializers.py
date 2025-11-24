@@ -17,10 +17,12 @@ class LevelSerializer(serializers.ModelSerializer):
         fields = '__all__'
 class CourseSerializer(serializers.ModelSerializer):
     department_name = serializers.CharField(source='department.name', read_only=True)
-    
+    # --- ADD LEVEL NAME HERE ---
+    level_name = serializers.CharField(source='level.name', read_only=True) 
+
     class Meta:
         model = Course
-        fields = ['id', 'code', 'name', 'credit_hours', 'department_name']
+        fields = ['id', 'code', 'name', 'credit_hours', 'department_name', 'level_name']
 
 class GradeSerializer(serializers.ModelSerializer):
     # Existing fields

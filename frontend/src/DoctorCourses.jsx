@@ -36,12 +36,12 @@ export default function DoctorCourses() {
                 <Typography variant="h5" fontWeight="bold" gutterBottom>{course.name}</Typography>
 
                 <Box mb={3}>
-                  <Chip label={`${course.credit_hours} Credits`} size="small" sx={{ mr: 1 }} />
+                  {/* DISPLAY LEVEL NAME INSTEAD OF CREDITS */}
+                  <Chip label={course.level_name} color="primary" size="small" sx={{ mr: 1 }} />
                   <Chip label={course.department_name} color="primary" size="small" variant="outlined" />
                 </Box>
 
                 <Box display="flex" gap={1}>
-                  {/* THE ONLY ACTION BUTTON */}
                   <Button
                     variant="contained"
                     startIcon={<SettingsIcon />}
