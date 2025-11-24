@@ -24,6 +24,7 @@ from .models import TeachingAssignment
 from .models import Certificate
 from .serializers import CertificateSerializer
 from django.db import IntegrityError
+from rest_framework.exceptions import ValidationError
 
 User = get_user_model()
 
@@ -321,6 +322,14 @@ class LevelListCreateView(generics.ListCreateAPIView):
     serializer_class = LevelSerializer
     permission_classes = [IsAuthenticated]
 
+    def perform_create(self, serializer):
+        # 1. ENFORCEMENT: Check if maximum level limit is reached (5 levels total)
+        if Level.objects.count() >= 5:
+            raise ValidationError("Maximum of 5 academic levels already exist. Cannot create more.")
+        
+        # 2. Proceed with creation
+        serializer.save()
+
 class UploadStudentsView(APIView):
     parser_classes = (MultiPartParser, FormParser)
     permission_classes = [IsAuthenticated] 
@@ -548,3 +557,4 @@ def get_my_certificate(request):
         return Response(serializer.data)
     except Certificate.DoesNotExist:
         return Response({"error": "No certificate found"}, status=404)
+
