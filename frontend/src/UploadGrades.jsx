@@ -25,7 +25,7 @@ export default function UploadGrades() {
 
         try {
             const token = localStorage.getItem("access_token");
-            await axios.post("http://localhost:8000/api/upload-grades/", formData, {
+            await axios.post("http://localhost/api/upload-grades/", formData, {
                 headers: {
                     "Content-Type": "multipart/form-data",
                     Authorization: `Bearer ${token}`,
