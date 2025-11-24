@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Container, Typography, Box, Paper, Button, Grid, Card, CardActionArea, CardContent, Breadcrumbs, Link, Divider, Dialog, DialogTitle, DialogContent, DialogActions, TextField, IconButton } from "@mui/material";
+import { Container, Typography, Box, Paper, Button, Grid, Card, CardActionArea, CardContent, Breadcrumbs, Link, Divider, Dialog, DialogTitle, DialogContent, DialogActions, TextField } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import DomainIcon from '@mui/icons-material/Domain';
@@ -7,6 +7,7 @@ import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import SchoolIcon from '@mui/icons-material/School';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
+import VisibilityIcon from '@mui/icons-material/Visibility';
 
 export default function StaffDashboard() {
     const navigate = useNavigate();
@@ -60,11 +61,11 @@ export default function StaffDashboard() {
             if (dialogType === "YEAR") {
                 // Create Year
                 const res = await axios.post("/api/years/", { year: newItemName }, { headers });
-                setYears([...years, res.data]); // Update UI instantly
+                setYears([...years, res.data]);
             } else if (dialogType === "LEVEL") {
                 // Create Level
                 const res = await axios.post("/api/levels/", { name: newItemName }, { headers });
-                setLevels([...levels, res.data]); // Update UI instantly
+                setLevels([...levels, res.data]);
             }
             setOpenDialog(false);
         } catch (err) {
@@ -78,6 +79,16 @@ export default function StaffDashboard() {
 
     const goToUpload = (level) => {
         navigate("/staff/students", {
+            state: {
+                dept: selectedDept.name,
+                year: selectedYear.year,
+                level: level.name
+            }
+        });
+    };
+
+    const goToViewList = (level) => {
+        navigate("/staff/students/list", {
             state: {
                 dept: selectedDept.name,
                 year: selectedYear.year,
@@ -116,6 +127,7 @@ export default function StaffDashboard() {
                                     <CardActionArea onClick={() => selectDept(dept)} sx={{ py: 4, textAlign: 'center' }}>
                                         <DomainIcon fontSize="large" color="primary" />
                                         <Typography variant="h6" sx={{ mt: 1 }}>{dept.name}</Typography>
+                                        <Typography variant="caption" color="textSecondary">{dept.code}</Typography>
                                     </CardActionArea>
                                 </Card>
                             </Grid>
@@ -167,9 +179,27 @@ export default function StaffDashboard() {
                                         <SchoolIcon fontSize="large" color="action" sx={{ mb: 1 }} />
                                         <Typography variant="h6" gutterBottom>{level.name}</Typography>
                                         <Divider sx={{ my: 1 }} />
-                                        <Button variant="contained" startIcon={<UploadFileIcon />} fullWidth size="small" onClick={() => goToUpload(level)}>
-                                            Upload List
-                                        </Button>
+
+                                        <Box display="flex" gap={1} mt={2}>
+                                            <Button
+                                                variant="contained"
+                                                startIcon={<UploadFileIcon />}
+                                                fullWidth
+                                                size="small"
+                                                onClick={() => goToUpload(level)}
+                                            >
+                                                Upload
+                                            </Button>
+                                            <Button
+                                                variant="outlined"
+                                                startIcon={<VisibilityIcon />}
+                                                fullWidth
+                                                size="small"
+                                                onClick={() => goToViewList(level)}
+                                            >
+                                                View
+                                            </Button>
+                                        </Box>
                                     </CardContent>
                                 </Card>
                             </Grid>

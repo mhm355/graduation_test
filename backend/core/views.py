@@ -17,6 +17,8 @@ from .models import Material
 from .serializers import MaterialSerializer
 from .models import Department, AcademicYear, Level
 from .serializers import DepartmentSerializer, AcademicYearSerializer, LevelSerializer
+from users.serializers import StudentSerializer
+from users.models import User
 
 User = get_user_model()
 
@@ -314,3 +316,40 @@ class UploadStudentsView(APIView):
         except Exception as e:
             # This catches errors like missing columns
             return Response({"error": str(e)}, status=400)
+
+# 1. List Students (Filtered)
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def list_students(request):
+    dept_name = request.query_params.get('dept')
+    level_name = request.query_params.get('level')
+    
+    students = User.objects.filter(role='STUDENT')
+    
+    if dept_name:
+        students = students.filter(department__name__iexact=dept_name)
+    if level_name:
+        students = students.filter(level__name__iexact=level_name)
+        
+    serializer = StudentSerializer(students, many=True)
+    return Response(serializer.data)
+
+# 2. Edit/Delete Student
+@api_view(['PUT', 'DELETE'])
+@permission_classes([IsAuthenticated])
+def manage_student(request, pk):
+    try:
+        student = User.objects.get(pk=pk)
+    except User.DoesNotExist:
+        return Response(status=404)
+
+    if request.method == 'DELETE':
+        student.delete()
+        return Response({"status": "Student deleted"})
+
+    elif request.method == 'PUT':
+        # Allow updating Name and ID
+        student.first_name = request.data.get('first_name', student.first_name)
+        student.username = request.data.get('username', student.username) # Student ID
+        student.save()
+        return Response({"status": "Student updated"})
