@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Container, Typography, Box, Paper, Button, Grid, Card, CardActionArea, CardContent, Breadcrumbs, Link, Divider, Dialog, DialogTitle, DialogContent, DialogActions, TextField } from "@mui/material";
+import { Container, Typography, Box, Paper, Button, Grid, Card, CardActionArea, CardContent, Breadcrumbs, Link, Divider, Dialog, DialogTitle, DialogContent, DialogActions, TextField, IconButton } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import DomainIcon from '@mui/icons-material/Domain';
@@ -8,24 +8,22 @@ import SchoolIcon from '@mui/icons-material/School';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import VisibilityIcon from '@mui/icons-material/Visibility';
+import DeleteIcon from '@mui/icons-material/Delete'; // <--- Import Delete Icon
 
 export default function StaffDashboard() {
     const navigate = useNavigate();
 
-    // Navigation State
     const [step, setStep] = useState(1);
     const [selectedDept, setSelectedDept] = useState(null);
     const [selectedYear, setSelectedYear] = useState(null);
 
-    // Data State
     const [departments, setDepartments] = useState([]);
     const [years, setYears] = useState([]);
     const [levels, setLevels] = useState([]);
 
-    // Dialog State (For Creating New Items)
     const [openDialog, setOpenDialog] = useState(false);
     const [newItemName, setNewItemName] = useState("");
-    const [dialogType, setDialogType] = useState(""); // "YEAR" or "LEVEL"
+    const [dialogType, setDialogType] = useState("");
 
     useEffect(() => {
         fetchData("/api/departments/", setDepartments);
@@ -46,7 +44,24 @@ export default function StaffDashboard() {
         navigate("/login");
     };
 
-    // --- CREATE NEW ITEM LOGIC ---
+    // --- DELETE LOGIC ---
+    const handleDelete = async (e, type, id) => {
+        e.stopPropagation(); // Stop the card from being clicked
+        if (!window.confirm("Are you sure? This might delete related data.")) return;
+
+        const token = localStorage.getItem("access_token");
+        const url = type === "YEAR" ? `/api/years/${id}/` : `/api/levels/${id}/`;
+
+        try {
+            await axios.delete(url, { headers: { Authorization: `Bearer ${token}` } });
+            // Update UI instantly
+            if (type === "YEAR") setYears(years.filter(y => y.id !== id));
+            if (type === "LEVEL") setLevels(levels.filter(l => l.id !== id));
+        } catch (err) {
+            alert("Failed to delete. It might be in use.");
+        }
+    };
+
     const handleOpenAdd = (type) => {
         setDialogType(type);
         setNewItemName("");
@@ -59,42 +74,27 @@ export default function StaffDashboard() {
 
         try {
             if (dialogType === "YEAR") {
-                // Create Year
                 const res = await axios.post("/api/years/", { year: newItemName }, { headers });
                 setYears([...years, res.data]);
             } else if (dialogType === "LEVEL") {
-                // Create Level
                 const res = await axios.post("/api/levels/", { name: newItemName }, { headers });
                 setLevels([...levels, res.data]);
             }
             setOpenDialog(false);
         } catch (err) {
-            alert("Failed to create item. It might already exist.");
+            alert("Failed to create item.");
         }
     };
 
-    // --- Navigation Handlers ---
     const selectDept = (dept) => { setSelectedDept(dept); setStep(2); };
     const selectYear = (year) => { setSelectedYear(year); setStep(3); };
 
     const goToUpload = (level) => {
-        navigate("/staff/students", {
-            state: {
-                dept: selectedDept.name,
-                year: selectedYear.year,
-                level: level.name
-            }
-        });
+        navigate("/staff/students", { state: { dept: selectedDept.name, year: selectedYear.year, level: level.name } });
     };
 
     const goToViewList = (level) => {
-        navigate("/staff/students/list", {
-            state: {
-                dept: selectedDept.name,
-                year: selectedYear.year,
-                level: level.name
-            }
-        });
+        navigate("/staff/students/list", { state: { dept: selectedDept.name, year: selectedYear.year, level: level.name } });
     };
 
     const reset = () => { setStep(1); setSelectedDept(null); setSelectedYear(null); };
@@ -109,14 +109,11 @@ export default function StaffDashboard() {
             <Paper sx={{ p: 2, mb: 3, bgcolor: "#f5f5f5" }}>
                 <Breadcrumbs aria-label="breadcrumb">
                     <Link component="button" underline="hover" color="inherit" onClick={reset}>All Departments</Link>
-                    {selectedDept && (
-                        <Link component="button" underline="hover" color="inherit" onClick={() => setStep(2)}>{selectedDept.name}</Link>
-                    )}
+                    {selectedDept && <Link component="button" underline="hover" color="inherit" onClick={() => setStep(2)}>{selectedDept.name}</Link>}
                     {selectedYear && <Typography color="text.primary">{selectedYear.year}</Typography>}
                 </Breadcrumbs>
             </Paper>
 
-            {/* --- STEP 1: SELECT DEPARTMENT --- */}
             {step === 1 && (
                 <Box>
                     <Typography variant="h5" gutterBottom fontWeight="bold">Select Department</Typography>
@@ -136,15 +133,24 @@ export default function StaffDashboard() {
                 </Box>
             )}
 
-            {/* --- STEP 2: SELECT OR ADD YEAR --- */}
+            {/* --- STEP 2: YEAR + DELETE BUTTON --- */}
             {step === 2 && (
                 <Box>
                     <Typography variant="h5" gutterBottom fontWeight="bold">Academic Years</Typography>
                     <Grid container spacing={3}>
-                        {/* List Existing Years */}
                         {years.map((year) => (
                             <Grid item xs={12} md={3} key={year.id}>
-                                <Card elevation={3}>
+                                <Card elevation={3} sx={{ position: "relative" }}>
+                                    {/* Delete Button */}
+                                    <IconButton
+                                        size="small"
+                                        color="error"
+                                        onClick={(e) => handleDelete(e, "YEAR", year.id)}
+                                        sx={{ position: "absolute", top: 5, right: 5, zIndex: 10 }}
+                                    >
+                                        <DeleteIcon fontSize="small" />
+                                    </IconButton>
+
                                     <CardActionArea onClick={() => selectYear(year)} sx={{ py: 4, textAlign: 'center' }}>
                                         <CalendarTodayIcon fontSize="large" color="secondary" />
                                         <Typography variant="h6" sx={{ mt: 1 }}>{year.year}</Typography>
@@ -153,7 +159,6 @@ export default function StaffDashboard() {
                             </Grid>
                         ))}
 
-                        {/* Add New Year Button */}
                         <Grid item xs={12} md={3}>
                             <Card elevation={0} sx={{ border: '2px dashed #ccc', height: '100%' }}>
                                 <CardActionArea onClick={() => handleOpenAdd("YEAR")} sx={{ py: 4, textAlign: 'center', height: '100%' }}>
@@ -166,46 +171,37 @@ export default function StaffDashboard() {
                 </Box>
             )}
 
-            {/* --- STEP 3: SELECT OR ADD LEVEL --- */}
+            {/* --- STEP 3: LEVEL + DELETE BUTTON --- */}
             {step === 3 && (
                 <Box>
                     <Typography variant="h5" gutterBottom fontWeight="bold">{selectedYear.year} Levels</Typography>
                     <Grid container spacing={3}>
-                        {/* List Existing Levels */}
                         {levels.map((level) => (
                             <Grid item xs={12} md={3} key={level.id}>
-                                <Card elevation={3}>
+                                <Card elevation={3} sx={{ position: "relative" }}>
+                                    {/* Delete Button */}
+                                    <IconButton
+                                        size="small"
+                                        color="error"
+                                        onClick={(e) => handleDelete(e, "LEVEL", level.id)}
+                                        sx={{ position: "absolute", top: 5, right: 5, zIndex: 10 }}
+                                    >
+                                        <DeleteIcon fontSize="small" />
+                                    </IconButton>
+
                                     <CardContent sx={{ textAlign: 'center' }}>
                                         <SchoolIcon fontSize="large" color="action" sx={{ mb: 1 }} />
                                         <Typography variant="h6" gutterBottom>{level.name}</Typography>
                                         <Divider sx={{ my: 1 }} />
-
                                         <Box display="flex" gap={1} mt={2}>
-                                            <Button
-                                                variant="contained"
-                                                startIcon={<UploadFileIcon />}
-                                                fullWidth
-                                                size="small"
-                                                onClick={() => goToUpload(level)}
-                                            >
-                                                Upload
-                                            </Button>
-                                            <Button
-                                                variant="outlined"
-                                                startIcon={<VisibilityIcon />}
-                                                fullWidth
-                                                size="small"
-                                                onClick={() => goToViewList(level)}
-                                            >
-                                                View
-                                            </Button>
+                                            <Button variant="contained" startIcon={<UploadFileIcon />} fullWidth size="small" onClick={() => goToUpload(level)}>Upload</Button>
+                                            <Button variant="outlined" startIcon={<VisibilityIcon />} fullWidth size="small" onClick={() => goToViewList(level)}>View</Button>
                                         </Box>
                                     </CardContent>
                                 </Card>
                             </Grid>
                         ))}
 
-                        {/* Add New Level Button */}
                         <Grid item xs={12} md={3}>
                             <Card elevation={0} sx={{ border: '2px dashed #ccc', height: '100%' }}>
                                 <CardActionArea onClick={() => handleOpenAdd("LEVEL")} sx={{ py: 4, textAlign: 'center', height: '100%' }}>
@@ -218,7 +214,6 @@ export default function StaffDashboard() {
                 </Box>
             )}
 
-            {/* --- CREATE DIALOG --- */}
             <Dialog open={openDialog} onClose={() => setOpenDialog(false)}>
                 <DialogTitle>Add New {dialogType === "YEAR" ? "Academic Year" : "Level"}</DialogTitle>
                 <DialogContent>
