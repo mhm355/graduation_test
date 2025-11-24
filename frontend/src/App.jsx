@@ -14,6 +14,7 @@ import DoctorCourses from "./DoctorCourses";
 import StaffDashboard from "./StaffDashboard";
 import StudentRegistration from "./StudentRegistration";
 import StudentList from "./StudentList";
+import DoctorCourseManage from "./DoctorCourseManage";
 // Define the BSU Theme
 const theme = createTheme({
   palette: {
@@ -54,6 +55,7 @@ function App() {
           <Route path="/staff-dashboard" element={<StaffDashboard />} />
           <Route path="/staff/students" element={<StudentRegistration />} />
           <Route path="/staff/students/list" element={<StudentList />} />
+          <Route path="/doctor/course/:id/manage" element={<DoctorCourseManage />} />
         </Routes>
       </BrowserRouter>
     </ThemeProvider>

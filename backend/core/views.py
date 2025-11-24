@@ -436,3 +436,27 @@ class LevelDetailView(generics.RetrieveUpdateDestroyAPIView):
             target_name=instance.name
         )
         return Response({"status": "Deletion request sent to Admin for approval."}, status=status.HTTP_202_ACCEPTED)
+
+
+# 1. Update ManageGradesView to filter by course
+class ManageGradesView(generics.ListCreateAPIView):
+    serializer_class = GradeSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        # Filter by course_id if provided in URL
+        course_id = self.request.query_params.get('course_id')
+        if course_id:
+            return Grade.objects.filter(course_id=course_id)
+        return Grade.objects.all() # Fallback
+
+# 2. Add ManageAttendanceView (New)
+class ManageAttendanceView(generics.ListAPIView):
+    serializer_class = AttendanceSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        course_id = self.request.query_params.get('course_id')
+        if course_id:
+            return Attendance.objects.filter(course_id=course_id)
+        return Attendance.objects.none()

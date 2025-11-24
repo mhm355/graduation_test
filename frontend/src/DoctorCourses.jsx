@@ -122,6 +122,13 @@ export default function DoctorCourses() {
                   >
                     Manage Files
                   </Button>
+                  <Button
+                    variant="contained"
+                    fullWidth
+                    onClick={() => navigate(`/doctor/course/${course.id}/manage`)}
+                  >
+                    Manage Course
+                  </Button>
                 </Box>
               </CardContent>
             </Card>

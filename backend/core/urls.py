@@ -22,4 +22,5 @@ urlpatterns = [
     path('students/<int:pk>/manage/', views.manage_student, name='manage_student'),
     path('years/<int:pk>/', views.AcademicYearDetailView.as_view(), name='year_detail'),
     path('levels/<int:pk>/', views.LevelDetailView.as_view(), name='level_detail'),
+    path('doctor/attendance/', views.ManageAttendanceView.as_view(), name='doctor_attendance'),
 ]
