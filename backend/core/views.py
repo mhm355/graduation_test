@@ -131,21 +131,34 @@ class UploadGradesView(APIView):
         try:
             df = pd.read_excel(file_obj)
             
+            # Counters for report
+            processed = 0
+            skipped = 0
+            
             for index, row in df.iterrows():
-                student_username = str(row['student_id'])
-                course_code = row['course_code']
-                score = row['score']
-                semester = row['semester']
-
-                # 1. Find the Course
+                # 1. Read the New Columns
+                # Format: department | level | semester | student_id | student_name | course_name | score
                 try:
-                    course = Course.objects.get(code=course_code)
-                except Course.DoesNotExist:
-                    return Response({"error": f"Course {course_code} does not exist"}, status=404)
+                    student_id = str(row['student_id']).strip()
+                    course_name = str(row['course_name']).strip()
+                    score = row['score']
+                    semester = str(row['semester']).strip()
+                    # We ignore 'department', 'level', 'student_name' for logic, 
+                    # but they are useful for the doctor's reference in the sheet.
+                except KeyError as e:
+                    return Response({"error": f"Missing column: {e}"}, status=400)
 
-                # --- SECURITY CHECK (UPDATED) ---
+                # 2. Find the Course by NAME (Not Code anymore)
+                try:
+                    course = Course.objects.get(name__iexact=course_name)
+                except Course.DoesNotExist:
+                    print(f"Skipping: Course '{course_name}' not found.")
+                    skipped += 1
+                    continue
+
+                # 3. SECURITY CHECK
+                # Ensure this doctor is actually assigned to this course
                 if request.user.role == 'DOCTOR':
-                    # Check TeachingAssignment table
                     is_assigned = TeachingAssignment.objects.filter(
                         doctor=request.user, 
                         course=course
@@ -153,23 +166,25 @@ class UploadGradesView(APIView):
                     
                     if not is_assigned:
                          return Response(
-                            {"error": f"Security Alert: You are not assigned to teach {course_code}."}, 
+                            {"error": f"Security Alert: You are not assigned to teach '{course_name}'."}, 
                             status=status.HTTP_403_FORBIDDEN
                         )
-                # -------------------------------
 
+                # 4. Find Student & Save Grade
                 try:
-                    student = User.objects.get(username=student_username)
+                    student = User.objects.get(username=student_id)
                     
                     Grade.objects.update_or_create(
                         student=student,
                         course=course,
                         defaults={'score': score, 'semester': semester}
                     )
+                    processed += 1
                 except User.DoesNotExist:
-                    print(f"Student {student_username} not found")
+                    print(f"Student {student_id} not found")
+                    skipped += 1
 
-            return Response({"status": "Grades uploaded successfully!"}, status=status.HTTP_201_CREATED)
+            return Response({"status": f"Success! Processed: {processed}, Skipped: {skipped}"}, status=status.HTTP_201_CREATED)
 
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)

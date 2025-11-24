@@ -1,9 +1,11 @@
 import { useState } from "react";
 import axios from "axios";
-import { Container, Typography, Button, Box, Paper, Alert, LinearProgress } from "@mui/material";
+import { Container, Typography, Button, Paper, Alert, LinearProgress } from "@mui/material";
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
+import { useNavigate } from "react-router-dom";
 
 export default function UploadGrades() {
+    const navigate = useNavigate();
     const [file, setFile] = useState(null);
     const [status, setStatus] = useState({ type: "", message: "" });
     const [loading, setLoading] = useState(false);
@@ -25,17 +27,20 @@ export default function UploadGrades() {
 
         try {
             const token = localStorage.getItem("access_token");
-            await axios.post("http://localhost/api/upload-grades/", formData, {
+            // URL is relative because of Nginx
+            const res = await axios.post("/api/upload-grades/", formData, {
                 headers: {
                     "Content-Type": "multipart/form-data",
                     Authorization: `Bearer ${token}`,
                 },
             });
 
-            setStatus({ type: "success", message: "Grades uploaded successfully!" });
+            setStatus({ type: "success", message: res.data.status });
         } catch (error) {
             console.error(error);
-            setStatus({ type: "error", message: "Upload failed. Check your file format." });
+            // Display the specific error from Backend (e.g. "Missing column: score")
+            const errorMsg = error.response?.data?.error || "Upload failed.";
+            setStatus({ type: "error", message: errorMsg });
         } finally {
             setLoading(false);
         }
@@ -43,14 +48,20 @@ export default function UploadGrades() {
 
     return (
         <Container maxWidth="sm" sx={{ mt: 8 }}>
+            <Button onClick={() => navigate("/doctor/courses")} sx={{ mb: 2 }}>← Back to Courses</Button>
+
             <Paper elevation={3} sx={{ p: 4, textAlign: 'center' }}>
                 <Typography variant="h5" gutterBottom fontWeight="bold" color="primary">
-                    Upload Grades
+                    Bulk Upload Grades
                 </Typography>
 
-                <Typography variant="body2" color="textSecondary" mb={3}>
-                    Upload the Excel sheet (.xlsx) containing student grades.
-                </Typography>
+                {/* UPDATED INSTRUCTIONS HERE */}
+                <Alert severity="info" sx={{ mb: 3, textAlign: 'left' }}>
+                    <Typography variant="subtitle2" fontWeight="bold">Required Excel Columns:</Typography>
+                    <Typography variant="body2" sx={{ fontFamily: 'monospace', mt: 1 }}>
+                        department | level | semester | student_id | student_name | course_name | score
+                    </Typography>
+                </Alert>
 
                 <Button
                     component="label"
@@ -58,7 +69,7 @@ export default function UploadGrades() {
                     startIcon={<CloudUploadIcon />}
                     sx={{ mb: 2, width: "100%", height: "50px" }}
                 >
-                    {file ? file.name : "Select Excel File"}
+                    {file ? file.name : "Select Excel File (.xlsx)"}
                     <input type="file" hidden onChange={handleFileChange} accept=".xlsx, .xls" />
                 </Button>
 
