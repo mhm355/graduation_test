@@ -215,11 +215,31 @@ def update_grade(request, pk):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def get_doctor_courses(request):
-    # Security: Only return courses where the 'doctor' field matches the logged-in user
     if request.user.role == 'DOCTOR':
-        courses = Course.objects.filter(doctor=request.user)
-        serializer = CourseSerializer(courses, many=True)
-        return Response(serializer.data)
+        # OLD WAY: courses = Course.objects.filter(doctor=request.user)
+        
+        # NEW WAY: Get assignments for this doctor
+        assignments = TeachingAssignment.objects.filter(doctor=request.user)
+        
+        # We need to extract the 'course' from each assignment
+        # But we also want to know which Year/Level they are assigned to!
+        
+        data = []
+        for assign in assignments:
+            data.append({
+                "id": assign.course.id,
+                "code": assign.course.code,
+                "name": assign.course.name,
+                "department_name": assign.course.department.name,
+                "credit_hours": assign.course.credit_hours,
+                # Extra info from the assignment
+                "assigned_year": assign.academic_year.year,
+                "assigned_level": assign.level.name,
+                "assigned_semester": assign.semester,
+            })
+            
+        return Response(data)
+        
     return Response({"error": "Authorized for Doctors only"}, status=403)
 
 @api_view(['DELETE'])

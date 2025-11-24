@@ -1,6 +1,6 @@
 
 from django.contrib import admin, messages
-from .models import Department, Course, Grade, News, Attendance, Material, AcademicYear, Level, DeletionRequest
+from .models import Department, Course, Grade, News, Attendance, Material, AcademicYear, Level, DeletionRequest, TeachingAssignment
 @admin.register(Department)
 class DepartmentAdmin(admin.ModelAdmin):
     list_display = ('name', 'code')
@@ -50,3 +50,9 @@ class DeletionRequestAdmin(admin.ModelAdmin):
             except (AcademicYear.DoesNotExist, Level.DoesNotExist):
                 self.message_user(request, f"Item {req.target_name} already deleted or not found.", messages.WARNING)
                 req.delete() # Clean up invalid request
+
+@admin.register(TeachingAssignment)
+class TeachingAssignmentAdmin(admin.ModelAdmin):
+    list_display = ('doctor', 'course', 'academic_year', 'level', 'semester')
+    list_filter = ('academic_year', 'level', 'semester', 'doctor')
+    search_fields = ('doctor__username', 'course__name')
