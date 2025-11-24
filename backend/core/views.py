@@ -256,3 +256,37 @@ class LevelListCreateView(generics.ListCreateAPIView):
     queryset = Level.objects.all()
     serializer_class = LevelSerializer
     permission_classes = [IsAuthenticated]
+
+class UploadStudentsView(APIView):
+    parser_classes = (MultiPartParser, FormParser)
+    permission_classes = [IsAuthenticated] 
+
+    def post(self, request, *args, **kwargs):
+        if 'file' not in request.FILES:
+            return Response({"error": "No file provided"}, status=400)
+
+        file_obj = request.FILES['file']
+        try:
+            df = pd.read_excel(file_obj)
+            
+            created_count = 0
+            for index, row in df.iterrows():
+                # Expects: student_id, student_name, national_id
+                username = str(row['student_id'])
+                name = row['student_name']
+                national_id = str(row['national_id'])
+                
+                # Create User if not exists
+                if not User.objects.filter(username=username).exists():
+                    User.objects.create_user(
+                        username=username,
+                        password=national_id, # Default password is National ID
+                        first_name=name,
+                        role='STUDENT',
+                        national_id=national_id
+                    )
+                    created_count += 1
+            
+            return Response({"status": f"Successfully registered {created_count} new students!"})
+        except Exception as e:
+            return Response({"error": str(e)}, status=400)

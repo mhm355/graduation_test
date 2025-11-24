@@ -17,4 +17,5 @@ urlpatterns = [
     path('departments/', views.DepartmentListCreateView.as_view(), name='department_list_create'),
     path('years/', views.AcademicYearListCreateView.as_view(), name='year_list_create'),
     path('levels/', views.LevelListCreateView.as_view(), name='level_list_create'),
+    path('upload-students/', views.UploadStudentsView.as_view(), name='upload_students'),
 ]
