@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from .models import Department, AcademicYear, Level, Course, Grade, News, Attendance, Material, Certificate
+from rest_framework.fields import SerializerMethodField
 
 class DepartmentSerializer(serializers.ModelSerializer):
     class Meta:
@@ -18,7 +19,11 @@ class LevelSerializer(serializers.ModelSerializer):
 class CourseSerializer(serializers.ModelSerializer):
     department_name = serializers.CharField(source='department.name', read_only=True)
     # --- ADD LEVEL NAME HERE ---
-    level_name = serializers.CharField(source='level.name', read_only=True) 
+    level_name = SerializerMethodField()
+
+    def get_level_name(self, obj):
+        # Check if obj.level exists before accessing .name
+        return obj.level.name if obj.level else "N/A - Assign Level"
 
     class Meta:
         model = Course
