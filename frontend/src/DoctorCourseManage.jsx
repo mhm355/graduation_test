@@ -154,40 +154,55 @@ export default function DoctorCourseManage() {
       )}
 
       {/* TAB 2: GRADES (Updated) */}
-      {tabIndex === 1 && (
-        <Box>
-            <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-                <Typography variant="h6">Student Grades</Typography>
-                <Button variant="contained" color="secondary" onClick={() => navigate("/upload")}>Bulk Upload Excel</Button>
-            </Box>
-            <TableContainer component={Paper}>
-                <Table>
-                    <TableHead sx={{ bgcolor: "#eee" }}>
-                        <TableRow>
-                            <TableCell>Student</TableCell>
-                            <TableCell>Score</TableCell>
-                            <TableCell>Grade</TableCell>
-                            <TableCell>Action</TableCell> {/* New Column */}
-                        </TableRow>
-                    </TableHead>
-                    <TableBody>
-                        {grades.map(g => (
-                            <TableRow key={g.id}>
-                                <TableCell>{g.student}</TableCell>
-                                <TableCell sx={{ fontWeight: 'bold' }}>{g.score}</TableCell>
-                                <TableCell>{g.letter_grade}</TableCell>
-                                <TableCell>
-                                    <IconButton color="primary" size="small" onClick={() => handleEditGradeClick(g)}>
-                                        <EditIcon />
-                                    </IconButton>
-                                </TableCell>
-                            </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
-            </TableContainer>
-        </Box>
-      )}
+          {tabIndex === 1 && (
+              <Box>
+                  <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+                      <Typography variant="h6">Student Grades</Typography>
+                      <Button variant="contained" color="secondary" onClick={() => navigate("/upload")}>Bulk Upload Excel</Button>
+                  </Box>
+                  <TableContainer component={Paper}>
+                      <Table>
+                          <TableHead sx={{ bgcolor: "#eee" }}>
+                              <TableRow>
+                                  {/* NEW HEADERS */}
+                                  <TableCell><strong>ID</strong></TableCell>
+                                  <TableCell><strong>Name</strong></TableCell>
+                                  <TableCell><strong>Level</strong></TableCell>
+                                  <TableCell><strong>Semester</strong></TableCell>
+                                  <TableCell align="center"><strong>Score</strong></TableCell>
+                                  <TableCell align="center"><strong>Grade</strong></TableCell>
+                                  <TableCell><strong>Action</strong></TableCell>
+                              </TableRow>
+                          </TableHead>
+                          <TableBody>
+                              {grades.map(g => (
+                                  <TableRow key={g.id}>
+                                      {/* NEW DATA CELLS */}
+                                      <TableCell>{g.student_id}</TableCell>
+                                      <TableCell>{g.student_name}</TableCell>
+                                      <TableCell>{g.level}</TableCell>
+                                      <TableCell>{g.semester}</TableCell>
+
+                                      <TableCell align="center" sx={{ fontWeight: 'bold' }}>{g.score}</TableCell>
+                                      <TableCell align="center">
+                                          <Chip
+                                              label={g.letter_grade}
+                                              color={g.letter_grade === 'F' ? 'error' : 'success'}
+                                              size="small"
+                                          />
+                                      </TableCell>
+                                      <TableCell>
+                                          <IconButton color="primary" size="small" onClick={() => handleEditGradeClick(g)}>
+                                              <EditIcon />
+                                          </IconButton>
+                                      </TableCell>
+                                  </TableRow>
+                              ))}
+                          </TableBody>
+                      </Table>
+                  </TableContainer>
+              </Box>
+          )}
 
       {/* TAB 3: ATTENDANCE */}
       {tabIndex === 2 && (
