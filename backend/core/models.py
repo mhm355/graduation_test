@@ -92,3 +92,21 @@ class News(models.Model):
     content = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
     is_public = models.BooleanField(default=True)
+
+class DeletionRequest(models.Model):
+    TARGET_CHOICES = (
+        ('YEAR', 'Academic Year'), 
+        ('LEVEL', 'Level')
+    )
+    
+    requester = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    target_type = models.CharField(max_length=10, choices=TARGET_CHOICES)
+    target_id = models.IntegerField()
+    target_name = models.CharField(max_length=100) # Save the name (e.g. "2024") for display
+    
+    # Status flags
+    is_approved = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Request by {self.requester}: Delete {self.target_type} '{self.target_name}'"
