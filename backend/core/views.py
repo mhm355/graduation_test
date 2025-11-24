@@ -131,24 +131,24 @@ class UploadGradesView(APIView):
         try:
             df = pd.read_excel(file_obj)
             
-            # Counters for report
             processed = 0
             skipped = 0
             
             for index, row in df.iterrows():
-                # 1. Read the New Columns
-                # Format: department | level | semester | student_id | student_name | course_name | score
                 try:
-                    student_id = str(row['student_id']).strip()
-                    course_name = str(row['course_name']).strip()
-                    score = row['score']
+                    # 1. Read ALL Requested Columns
+                    # Format: department | level | semester | student_id | student_name | course_name | score
+                    dept_name = str(row['department']).strip()
+                    level_name = str(row['level']).strip()
                     semester = str(row['semester']).strip()
-                    # We ignore 'department', 'level', 'student_name' for logic, 
-                    # but they are useful for the doctor's reference in the sheet.
+                    course_name = str(row['course_name']).strip()
+                    student_id = str(row['student_id']).strip()
+                    student_name = str(row['student_name']).strip()
+                    score = row['score']
                 except KeyError as e:
-                    return Response({"error": f"Missing column: {e}"}, status=400)
+                    return Response({"error": f"Missing required column: {e}"}, status=400)
 
-                # 2. Find the Course by NAME (Not Code anymore)
+                # 2. Find the Course by NAME
                 try:
                     course = Course.objects.get(name__iexact=course_name)
                 except Course.DoesNotExist:
@@ -156,8 +156,7 @@ class UploadGradesView(APIView):
                     skipped += 1
                     continue
 
-                # 3. SECURITY CHECK
-                # Ensure this doctor is actually assigned to this course
+                # 3. Security Check (Doctor Ownership)
                 if request.user.role == 'DOCTOR':
                     is_assigned = TeachingAssignment.objects.filter(
                         doctor=request.user, 
@@ -174,6 +173,9 @@ class UploadGradesView(APIView):
                 try:
                     student = User.objects.get(username=student_id)
                     
+                    # (Optional) Validate Student matches Dept/Level in Excel?
+                    # For now, we trust the Student ID is correct.
+
                     Grade.objects.update_or_create(
                         student=student,
                         course=course,
@@ -181,7 +183,7 @@ class UploadGradesView(APIView):
                     )
                     processed += 1
                 except User.DoesNotExist:
-                    print(f"Student {student_id} not found")
+                    print(f"Student {student_id} ({student_name}) not found")
                     skipped += 1
 
             return Response({"status": f"Success! Processed: {processed}, Skipped: {skipped}"}, status=status.HTTP_201_CREATED)
