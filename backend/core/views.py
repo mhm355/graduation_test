@@ -32,16 +32,50 @@ User = get_user_model()
 
 
 
-#  EXISTING VIEWS 
-
+# 1. FILTERED COURSE LIST (Student Only)
 @api_view(['GET'])
+@permission_classes([IsAuthenticated])
 def get_courses(request):
-    # Ideally filter by student's department/level, but for now all courses:
-    courses = Course.objects.all()
+    user = request.user
     
-    # PASS CONTEXT SO SERIALIZER KNOWS THE USER
+    # If user is a Student, filter by their Dept + Level
+    if user.role == 'STUDENT':
+        # Safety check: Does the student have a profile set up?
+        if not user.department or not user.level:
+            return Response([]) # Return empty if they aren't assigned yet
+
+        courses = Course.objects.filter(
+            department=user.department,
+            level=user.level
+        )
+    else:
+        # If Admin/Staff, maybe show all? Or none. Let's show all for debug.
+        courses = Course.objects.all()
+    
     serializer = CourseSerializer(courses, many=True, context={'request': request})
+    return Response(serializer.data)
+
+
+# 2. FILTERED EXAM LIST (Student Only)
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_student_exams(request):
+    user = request.user
     
+    if user.role != 'STUDENT':
+        return Response({"error": "Students only"}, status=403)
+    
+    # Safety check
+    if not user.department or not user.level:
+        return Response([])
+
+    # Logic: Show exams ONLY for courses in the Student's Dept + Level
+    exams = Exam.objects.filter(
+        course__department=user.department, 
+        course__level=user.level
+    ).order_by('date', 'time')
+    
+    serializer = ExamSerializer(exams, many=True)
     return Response(serializer.data)
 
 @api_view(['GET'])
@@ -609,23 +643,3 @@ def delete_exam(request, pk):
         return Response({"status": "Exam cancelled"})
     except Exam.DoesNotExist:
         return Response(status=404)
-
-# 2. Student: View Schedule
-@api_view(['GET'])
-@permission_classes([IsAuthenticated])
-def get_student_exams(request):
-    user = request.user
-    if user.role != 'STUDENT':
-        return Response({"error": "Students only"}, status=403)
-    
-    # Logic: Show exams for courses in the Student's Department + Level
-    # (Or strictly courses they are enrolled in, but Dep/Level is easier for now)
-    if user.department and user.level:
-        exams = Exam.objects.filter(
-            course__department=user.department, 
-            course__level=user.level
-        ).order_by('date', 'time')
-        serializer = ExamSerializer(exams, many=True)
-        return Response(serializer.data)
-    
-    return Response([])
