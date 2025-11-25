@@ -21,14 +21,12 @@ export default function DoctorDashboard() {
         },
         // Placeholder for the next feature (Exams) so the page isn't too empty
         {
-            {
             title: "Exam Schedule",
             desc: "Schedule Midterms and Finals.",
             icon: <EventNoteIcon fontSize="large" color="secondary" />,
             action: () => navigate("/doctor/exams"), // <--- LINK IT HERE
             btnText: "Manage Exams"
-        }
-        }
+        },
     ];
 
     return (
