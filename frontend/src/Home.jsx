@@ -50,7 +50,6 @@ export default function Home() {
 
           {/* MAIN LOGIN BUTTON */}
           <Button 
-            variant="contained" 
             color="secondary" 
             sx={{ mr: 1, ml: 2, fontWeight: "bold", color: "#F7B500" }}
             onClick={() => navigate("/login")}
