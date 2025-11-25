@@ -31,6 +31,7 @@ ALLOWED_HOSTS = ['*']
 # Application definition
 
 INSTALLED_APPS = [
+    'jazzmin',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -152,3 +153,21 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
 ]
 
+JAZZMIN_SETTINGS = {
+    "site_title": "BSU Admin",
+    "site_header": "Engineering Portal",
+    "welcome_sign": "Welcome to BSU Engineering Administration",
+    "search_model": "users.User",
+    "user_avatar": None,
+    "topmenu_links": [
+        {"name": "Home",  "url": "admin:index", "permissions": ["auth.view_user"]},
+        {"name": "View Site", "url": "/" }, # Link back to React
+    ],
+    "show_sidebar": True,
+    "navigation_expanded": True,
+    "icons": {
+        "users.user": "fas fa-users",
+        "core.course": "fas fa-book",
+        "core.grade": "fas fa-chart-bar",
+    },
+}

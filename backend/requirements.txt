@@ -5,3 +5,4 @@ mysqlclient
 pandas
 openpyxl
 djangorestframework-simplejwt
+django-jazzmin
