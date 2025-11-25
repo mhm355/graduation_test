@@ -21,11 +21,13 @@ export default function DoctorDashboard() {
         },
         // Placeholder for the next feature (Exams) so the page isn't too empty
         {
+            {
             title: "Exam Schedule",
-            desc: "View upcoming exam dates and locations.",
+            desc: "Schedule Midterms and Finals.",
             icon: <EventNoteIcon fontSize="large" color="secondary" />,
-            action: () => alert("Exam Module Coming in Next Phase"),
-            btnText: "View Schedule"
+            action: () => navigate("/doctor/exams"), // <--- LINK IT HERE
+            btnText: "Manage Exams"
+        }
         }
     ];
 

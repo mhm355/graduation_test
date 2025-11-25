@@ -92,3 +92,16 @@ class CertificateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Certificate
         fields = ['id', 'student', 'student_name', 'file', 'uploaded_at']
+
+class Exam(models.Model):
+    EXAM_TYPES = (('Midterm', 'Midterm'), ('Final', 'Final'), ('Quiz', 'Quiz'))
+    
+    course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='exams')
+    exam_type = models.CharField(max_length=10, choices=EXAM_TYPES, default='Midterm')
+    date = models.DateField()
+    time = models.TimeField()
+    duration_minutes = models.IntegerField(default=90) # 1.5 Hours default
+    location = models.CharField(max_length=100) # e.g. "Hall 3, Building B"
+
+    def __str__(self):
+        return f"{self.course.code} {self.exam_type} - {self.date}"

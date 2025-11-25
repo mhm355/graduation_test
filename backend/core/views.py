@@ -25,6 +25,8 @@ from .models import Certificate
 from .serializers import CertificateSerializer
 from django.db import IntegrityError
 from rest_framework.exceptions import ValidationError
+from .models import Exam
+from .serializers import ExamSerializer
 
 User = get_user_model()
 
@@ -569,3 +571,61 @@ def get_my_certificate(request):
     except Certificate.DoesNotExist:
         return Response({"error": "No certificate found"}, status=404)
 
+# 1. Doctor: Schedule Exam
+class ManageExamsView(generics.ListCreateAPIView):
+    serializer_class = ExamSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        # Doctor sees exams for their assigned courses
+        if self.request.user.role == 'DOCTOR':
+            # Find courses taught by this doctor
+            assignments = TeachingAssignment.objects.filter(doctor=self.request.user)
+            my_courses = [a.course for a in assignments]
+            return Exam.objects.filter(course__in=my_courses).order_by('date')
+        return Exam.objects.none()
+
+    def perform_create(self, serializer):
+        # Security: Check if Doctor teaches this course
+        course = serializer.validated_data['course']
+        if self.request.user.role == 'DOCTOR':
+            is_assigned = TeachingAssignment.objects.filter(doctor=self.request.user, course=course).exists()
+            if not is_assigned:
+                raise PermissionDenied("You are not assigned to teach this course.")
+        serializer.save()
+
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
+def delete_exam(request, pk):
+    try:
+        exam = Exam.objects.get(pk=pk)
+        # Security Check
+        if request.user.role == 'DOCTOR':
+            is_assigned = TeachingAssignment.objects.filter(doctor=request.user, course=exam.course).exists()
+            if not is_assigned:
+                return Response({"error": "Unauthorized"}, status=403)
+        
+        exam.delete()
+        return Response({"status": "Exam cancelled"})
+    except Exam.DoesNotExist:
+        return Response(status=404)
+
+# 2. Student: View Schedule
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_student_exams(request):
+    user = request.user
+    if user.role != 'STUDENT':
+        return Response({"error": "Students only"}, status=403)
+    
+    # Logic: Show exams for courses in the Student's Department + Level
+    # (Or strictly courses they are enrolled in, but Dep/Level is easier for now)
+    if user.department and user.level:
+        exams = Exam.objects.filter(
+            course__department=user.department, 
+            course__level=user.level
+        ).order_by('date', 'time')
+        serializer = ExamSerializer(exams, many=True)
+        return Response(serializer.data)
+    
+    return Response([])
