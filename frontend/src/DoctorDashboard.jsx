@@ -26,7 +26,7 @@ export default function DoctorDashboard() {
             icon: <EventNoteIcon fontSize="large" color="secondary" />,
             action: () => navigate("/doctor/exams"), // <--- LINK IT HERE
             btnText: "Manage Exams"
-        },
+        }
     ];
 
     return (
