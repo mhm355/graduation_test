@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Department, AcademicYear, Level, Course, Grade, News, Attendance, Material, Certificate
+from .models import Department, AcademicYear, Level, Course, Grade, News, Attendance, Material, Certificate, Exam
 from rest_framework.fields import SerializerMethodField
 
 class DepartmentSerializer(serializers.ModelSerializer):
