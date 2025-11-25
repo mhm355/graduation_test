@@ -139,17 +139,40 @@ export default function Dashboard() {
                                 )}
                             </Grid>
 
-                            {/* 3. MATERIAL BUTTON */}
-                            <Grid item xs={12} sm={4} textAlign="right">
+                            {/* --- NEW: EXAM SECTION --- */}
+                            <Grid item xs={12} sm={4}>
+                                <Typography variant="caption" color="textSecondary">NEXT EXAM</Typography>
+                                {course.next_exam ? (
+                                    <Box>
+                                        <Typography variant="body2" fontWeight="bold" color="error">
+                                            {course.next_exam.type}
+                                        </Typography>
+                                        <Typography variant="caption" display="block">
+                                            {course.next_exam.date} at {course.next_exam.time}
+                                        </Typography>
+                                        <Chip 
+                                            label={course.next_exam.location} 
+                                            size="small" 
+                                            variant="outlined" 
+                                            sx={{ mt: 0.5, height: 20, fontSize: '0.7rem' }} 
+                                        />
+                                    </Box>
+                                ) : (
+                                    <Typography variant="body2" color="textSecondary">- No Exams -</Typography>
+                                )}
+                            </Grid>
+
+                            {/* 3. MATERIAL BUTTON (Keep this at the end or move to bottom) */}
+                            <Grid item xs={12} sx={{ mt: 2 }}>
                                 <Button 
                                     variant="outlined" 
+                                    fullWidth 
                                     startIcon={<MenuBookIcon />}
                                     onClick={() => navigate(`/course/${course.id}/materials`)}
                                 >
-                                    Materials
+                                    View Course Materials
                                 </Button>
                             </Grid>
-
                         </Grid>
                     </CardContent>
                 </Card>

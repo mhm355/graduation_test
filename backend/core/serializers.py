@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from .models import Department, AcademicYear, Level, Course, Grade, News, Attendance, Material, Certificate, Exam
 from rest_framework.fields import SerializerMethodField
+import datetime
 
 class DepartmentSerializer(serializers.ModelSerializer):
     class Meta:
@@ -19,16 +20,15 @@ class LevelSerializer(serializers.ModelSerializer):
 class CourseSerializer(serializers.ModelSerializer):
     department_name = serializers.CharField(source='department.name', read_only=True)
     level_name = serializers.CharField(source='level.name', read_only=True, default="N/A")
-    
-    # --- NEW FIELDS ---
     student_grade = serializers.SerializerMethodField()
     student_attendance = serializers.SerializerMethodField()
+    next_exam = serializers.SerializerMethodField()
 
     class Meta:
         model = Course
         fields = [
             'id', 'code', 'name', 'credit_hours', 'department_name', 'level_name',
-            'student_grade', 'student_attendance' # <--- Add them
+            'student_grade', 'student_attendance' ,'next_exam'
         ]
 
     def get_student_grade(self, obj):
@@ -50,6 +50,21 @@ class CourseSerializer(serializers.ModelSerializer):
             return {"percentage": att.percentage, "attended": att.attended_lectures, "total": att.total_lectures}
         except Attendance.DoesNotExist:
             return None
+        
+    def get_next_exam(self, obj):
+        # Find exams for this course that are today or in the future
+        today = datetime.date.today()
+        # Note: 'exams' works because we set related_name='exams' in the Model
+        exam = obj.exams.filter(date__gte=today).order_by('date', 'time').first()
+        
+        if exam:
+            return {
+                "type": exam.exam_type,
+                "date": exam.date,
+                "time": exam.time,
+                "location": exam.location
+            }
+        return None
 class GradeSerializer(serializers.ModelSerializer):
     # Existing fields
     course_name = serializers.CharField(source='course.name', read_only=True)
