@@ -41,7 +41,7 @@ export default function Home() {
 
           {/* ADMIN BUTTON (Direct link to Django Admin) */}
           <Button 
-            color="inherit" 
+            color="secondary" 
             href="/admin" 
             sx={{ mr: 1, ml: 2, fontWeight: "bold", color: "#F7B500" }}
           >
@@ -52,10 +52,10 @@ export default function Home() {
           <Button 
             variant="contained" 
             color="secondary" 
-            sx={{ ml: 2, fontWeight: "bold" }}
+            sx={{ mr: 1, ml: 2, fontWeight: "bold", color: "#F7B500" }}
             onClick={() => navigate("/login")}
           >
-            Student/Staff Portal
+            Student/Staff Login
           </Button>
         </Toolbar>
       </AppBar>
